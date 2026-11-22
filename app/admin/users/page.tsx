@@ -31,6 +31,7 @@ export default function AdminUsersPage() {
   const [user, setUser] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null)
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
@@ -38,17 +39,18 @@ export default function AdminUsersPage() {
     unit_slug: '',
   })
 
-  const supabase = createSupabaseBrowserClient()
-
   useEffect(() => {
+    const client = createSupabaseBrowserClient()
+    setSupabase(client)
+
     const loadData = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await client.auth.getSession()
       if (!session?.user) {
         window.location.href = '/login'
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await client
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
@@ -60,12 +62,12 @@ export default function AdminUsersPage() {
         return
       }
 
-      const { data: allProfiles } = await supabase.from('profiles').select('*')
+      const { data: allProfiles } = await client.from('profiles').select('*')
       setProfiles(allProfiles || [])
       setLoading(false)
     }
     loadData()
-  }, [supabase])
+  }, [])
 
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -88,6 +90,7 @@ export default function AdminUsersPage() {
   }
 
   const handleCreateUser = async () => {
+    if (!supabase) return
     try {
       const { data, error } = await supabase.auth.admin.createUser({
         email: formData.email,
@@ -116,6 +119,7 @@ export default function AdminUsersPage() {
   }
 
   const handleDeleteProfile = async (id: string) => {
+    if (!supabase) return
     if (!confirm('Hapus user ini dari sistem?')) return
 
     // Deactivate instead of delete (safer)
@@ -124,6 +128,7 @@ export default function AdminUsersPage() {
   }
 
   const toggleActive = async (profile: Profile) => {
+    if (!supabase) return
     await supabase.from('profiles').update({ is_active: !profile.is_active }).eq('id', profile.id)
     setProfiles(profiles.map((p) =>
       p.id === profile.id ? { ...p, is_active: !p.is_active } : p

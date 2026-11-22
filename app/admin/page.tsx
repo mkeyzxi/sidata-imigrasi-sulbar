@@ -33,20 +33,21 @@ type User = {
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  const supabase = createSupabaseBrowserClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null)
 
   useEffect(() => {
+    const client = createSupabaseBrowserClient()
+    setSupabase(client)
+
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await client.auth.getSession()
 
       if (!session?.user) {
         window.location.href = '/login'
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await client
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
@@ -58,9 +59,10 @@ export default function AdminPage() {
       setLoading(false)
     }
     checkAuth()
-  }, [supabase])
+  }, [])
 
   const handleLogout = async () => {
+    if (!supabase) return
     await supabase.auth.signOut()
     window.location.href = '/'
   }

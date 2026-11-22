@@ -52,27 +52,30 @@ export default function AdminDataPage() {
     tahun: new Date().getFullYear(),
   })
 
-  const supabase = createSupabaseBrowserClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null)
 
   useEffect(() => {
+    const client = createSupabaseBrowserClient()
+    setSupabase(client)
+
     const loadData = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await client.auth.getSession()
       if (!session?.user) {
         window.location.href = '/login'
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await client
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single()
       setUser(profile)
 
-      const { data: unitsData } = await supabase.from('units').select('*')
+      const { data: unitsData } = await client.from('units').select('*')
       setUnits(unitsData || [])
 
-      let query = supabase
+      let query = client
         .from('statistik_pendaftaran')
         .select('*')
         .order('tahun', { ascending: false })
@@ -86,7 +89,7 @@ export default function AdminDataPage() {
       setLoading(false)
     }
     loadData()
-  }, [supabase])
+  }, [])
 
   const canManageUnit = (unitId: string) => {
     if (!user) return false
@@ -121,6 +124,7 @@ export default function AdminDataPage() {
   }
 
   const handleSave = async () => {
+    if (!supabase) return
     const payload = {
       ...formData,
       nilai: parseFloat(formData.nilai) || 0,
@@ -143,6 +147,7 @@ export default function AdminDataPage() {
   }
 
   const handleDelete = async (id: number) => {
+    if (!supabase) return
     if (!confirm('Hapus data ini?')) return
     await supabase.from('statistik_pendaftaran').delete().eq('id', id)
     setStatistik(statistik.filter((s) => s.id !== id))

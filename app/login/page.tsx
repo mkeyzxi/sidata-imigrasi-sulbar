@@ -13,20 +13,23 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
-  const supabase = createSupabaseBrowserClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null)
 
   useEffect(() => {
+    const client = createSupabaseBrowserClient()
+    setSupabase(client)
+
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await client.auth.getSession()
       if (session) {
         router.push('/admin')
       }
     }
     checkAuth()
-  }, [supabase, router])
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
+    if (!supabase) return
     e.preventDefault()
     setError('')
     setLoading(true)
