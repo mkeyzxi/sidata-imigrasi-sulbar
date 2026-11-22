@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import type { Database } from '@/lib/supabase/database.types'
 import {
   ArrowLeft,
   LogOut,
@@ -19,7 +18,17 @@ import {
   X,
 } from 'lucide-react'
 
-type User = Database['public']['Tables']['profiles']['Row']
+type User = {
+  id: string
+  email: string | null
+  full_name: string | null
+  role: string
+  unit_slug: string | null
+  avatar_url: string | null
+  is_active: boolean
+  created_at: string | null
+  updated_at: string | null
+}
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null)

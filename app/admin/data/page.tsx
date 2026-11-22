@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import type { Database } from '@/lib/supabase/database.types'
 import {
   ArrowLeft,
   Plus,
@@ -13,8 +12,30 @@ import {
   Loader2,
 } from 'lucide-react'
 
-type Statistik = Database['public']['Tables']['statistik_pendaftaran']['Row']
-type Unit = Database['public']['Tables']['units']['Row']
+type Statistik = {
+  id: number
+  unit_id: string
+  kategori: string
+  sub_kategori: string | null
+  label: string | null
+  nilai: number
+  detail: string | null
+  tahun: number
+  created_at: string | null
+  updated_at: string | null
+}
+
+type Unit = {
+  id: string
+  name: string
+  short_name: string | null
+  type: string
+  description: string | null
+  image_url: string | null
+  slug: string
+  created_at: string | null
+  updated_at: string | null
+}
 
 export default function AdminDataPage() {
   const [statistik, setStatistik] = useState<Statistik[]>([])

@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import type { Database } from '@/lib/supabase/database.types'
 
 /**
  * Create a Supabase server client for use in Server Components
@@ -9,7 +8,7 @@ import type { Database } from '@/lib/supabase/database.types'
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies()
 
-  return createServerClient<Database>(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
     {
@@ -38,7 +37,7 @@ export async function createSupabaseServerClient() {
  * This client receives the request headers directly.
  */
 export function createSupabaseRouteClient(requestHeaders: Headers) {
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
     {
