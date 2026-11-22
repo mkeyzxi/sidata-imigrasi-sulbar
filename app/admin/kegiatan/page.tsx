@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import type { Database } from '@/lib/supabase/database.types'
 import {
   ArrowLeft,
   Plus,
@@ -15,12 +14,38 @@ import {
   MapPin,
   Image,
   Loader2,
+  X,
 } from 'lucide-react'
 
-type Kegiatan = Database['public']['Tables']['kegiatan']['Row']
-type Unit = Database['public']['Tables']['units']['Row']
+type Kegiatan = {
+  id: number
+  unit_id: string
+  bidang_id: string | null
+  title: string
+  description: string | null
+  date: string
+  location: string | null
+  type: string | null
+  image_url: string | null
+  published: boolean
+  created_by: string | null
+  created_at: string | null
+  updated_at: string | null
+}
 
-export default function AdminKegiatanPage() {
+type Unit = {
+  id: string
+  name: string
+  short_name: string | null
+  type: string
+  description: string | null
+  image_url: string | null
+  slug: string
+  created_at: string | null
+  updated_at: string | null
+}
+
+function AdminKegiatanContent() {
   const searchParams = useSearchParams()
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
   const [units, setUnits] = useState<Unit[]>([])
@@ -394,5 +419,20 @@ export default function AdminKegiatanPage() {
         )}
       </div>
     </main>
+  )
+}
+
+export default function AdminKegiatanPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-[calc(100dvh-5rem)] bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-primary-dark border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-text/60 font-medium">Memuat...</p>
+        </div>
+      </main>
+    }>
+      <AdminKegiatanContent />
+    </Suspense>
   )
 }

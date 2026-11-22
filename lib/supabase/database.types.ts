@@ -1,5 +1,5 @@
-// This file is auto-generated. Do not modify manually.
-// Use `supabase gen types typescript` to regenerate after schema changes.
+// Database types for Supabase
+// Simple type definitions for use with createClient
 
 export type Json =
   | string
@@ -122,7 +122,7 @@ export type Database = {
           location: string | null
           type: string | null
           image_url: string | null
-          published: boolean | null
+          published: boolean
           created_by: string | null
           created_at: string | null
           updated_at: string | null
@@ -137,7 +137,7 @@ export type Database = {
           location?: string | null
           type?: string | null
           image_url?: string | null
-          published?: boolean | null
+          published?: boolean
           created_by?: string | null
           created_at?: string | null
           updated_at?: string | null
@@ -152,7 +152,7 @@ export type Database = {
           location?: string | null
           type?: string | null
           image_url?: string | null
-          published?: boolean | null
+          published?: boolean
           created_by?: string | null
           created_at?: string | null
           updated_at?: string | null
@@ -223,81 +223,15 @@ export type Database = {
         }
       }
     }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    Views: Record<never, never>
+    Functions: Record<never, never>
+    Enums: Record<never, never>
+    CompositeTypes: Record<never, never>
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, 'public'>]
-
-export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
-    | { schema: string },
-  TableName extends string | PublicTableNameOrOptions = string,
-> = PublicTableNameOrOptions extends { schema: string }
-  ? PublicSchema['Tables'] &
-      PublicSchema['Views'] &
-      PublicSchema['CompositeTypes'][TableName]
-  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] &
-        PublicSchema['Views'] &
-        PublicSchema['CompositeTypes'])
-    ? (PublicSchema['Tables'] &
-        PublicSchema['Views'] &
-        PublicSchema['CompositeTypes'])[PublicTableNameOrOptions]
-    : never
-
-export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['CompositeTypes'])
-    | { schema: string },
-  TableName extends string | PublicTableNameOrOptions = string,
-> = PublicTableNameOrOptions extends { schema: string }
-  ? PublicSchema['Tables'][TableName]['Insert']
-  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] &
-        PublicSchema['CompositeTypes'])
-    ? PublicSchema['Tables'][PublicTableNameOrOptions]['Insert']
-    : never
-
-export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['CompositeTypes'])
-    | { schema: string },
-  TableName extends string | PublicTableNameOrOptions = string,
-> = PublicTableNameOrOptions extends { schema: string }
-  ? PublicSchema['Tables'][TableName]['Update']
-  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] &
-        PublicSchema['CompositeTypes'])
-    ? PublicSchema['Tables'][PublicTableNameOrOptions]['Update']
-    : never
-
-export type Relationships<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
-    | { schema: string; table: keyof (PublicSchema['Tables'] & PublicSchema['Views']) },
-  TableName extends string | PublicTableNameOrOptions = string,
-> = PublicTableNameOrOptions extends { schema: string; table: string }
-  ? PublicSchema['Tables'] & PublicSchema['Views'] & PublicSchema['CompositeTypes'][TableName]
-  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] &
-        PublicSchema['Views'] &
-        PublicSchema['CompositeTypes'])
-    ? (PublicSchema['Tables'] &
-        PublicSchema['Views'] &
-        PublicSchema['CompositeTypes'])[PublicTableNameOrOptions]
-    : never
-
-export type CompositeTypes<T> = T extends { [k: string]: unknown }
-  ? T
-  : T extends Record<string, unknown>
-    ? T
-    : T
+// Simple type aliases for common use cases
+export type Profiles = Database['public']['Tables']['profiles']['Row']
+export type Units = Database['public']['Tables']['units']['Row']
+export type Kegiatan = Database['public']['Tables']['kegiatan']['Row']
+export type Statistik = Database['public']['Tables']['statistik_pendaftaran']['Row']
