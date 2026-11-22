@@ -379,7 +379,7 @@ export default function DataPage() {
       </section>
 
       {/* Data Categories Grid */}
-      <section className="max-w-7xl mx-auto px-6">
+      {/* <section className="max-w-7xl mx-auto px-6">
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-accent mb-2">
             <Layers className="w-3.5 h-3.5" />
@@ -392,7 +392,7 @@ export default function DataPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Category 1 */}
+         
           <div className="bg-surface p-6 sm:p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-5">
               <FileCheck className="w-6 h-6" />
@@ -404,7 +404,7 @@ export default function DataPage() {
             </p>
           </div>
 
-          {/* Category 2 */}
+        
           <div className="bg-surface p-6 sm:p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-5">
               <ShieldCheck className="w-6 h-6" />
@@ -416,7 +416,7 @@ export default function DataPage() {
             </p>
           </div>
 
-          {/* Category 3 */}
+        
           <div className="bg-surface p-6 sm:p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-5">
               <Layers className="w-6 h-6" />
@@ -427,7 +427,7 @@ export default function DataPage() {
             </p>
           </div>
 
-          {/* Category 4 */}
+        
           <div className="bg-surface p-6 sm:p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-5">
               <Coins className="w-6 h-6" />
@@ -439,7 +439,7 @@ export default function DataPage() {
             </p>
           </div>
         </div>
-      </section>
+      </section> */}
     </main>
   )
 }
