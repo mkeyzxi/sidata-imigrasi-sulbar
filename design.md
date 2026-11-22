@@ -1186,7 +1186,7 @@ Footer
 Tampilkan tiga unit:
 
 ```text
-01  Kantor Wilayah Sulawesi Barat
+01  Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat
 02  Imigrasi Mamuju
 03  Imigrasi Polman
 ```

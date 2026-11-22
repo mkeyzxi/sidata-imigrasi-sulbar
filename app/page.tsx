@@ -6,7 +6,7 @@ const units = [
   {
     id: '01',
     code: 'KANWIL',
-    name: 'Kantor Wilayah\nSulawesi Barat',
+    name: 'Kantor Wilayah\nDirektorat Jenderal Imigrasi Sulawesi Barat',
     desc: 'Pusat koordinasi dan pengawasan keimigrasian wilayah Sulawesi Barat.',
     href: '/kanwil-sulbar',
     image:

@@ -8,7 +8,7 @@ Setelah website terbuka di http://localhost:3000, coba navigasi berikut:
 - Lihat data snapshot (Total Paspor: 4.921, Izin Tinggal: 74)
 - Kegiatan terbaru section
 
-### 2. Klik "Kantor Wilayah Sulawesi Barat"
+### 2. Klik "Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat"
 - Hero dengan foto gedung
 - 3 Bidang yang bisa diklik
 - Klik salah satu bidang (misalnya "Bidang Pelayanan Hukum")
