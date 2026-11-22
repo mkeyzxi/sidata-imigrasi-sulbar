@@ -53,6 +53,7 @@ function AdminKegiatanContent() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<Kegiatan | null>(null)
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -64,30 +65,31 @@ function AdminKegiatanContent() {
     published: true,
   })
 
-  const supabase = createSupabaseBrowserClient()
-
   useEffect(() => {
+    const client = createSupabaseBrowserClient()
+    setSupabase(client)
+
     const loadData = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await client.auth.getSession()
       if (!session?.user) {
         window.location.href = '/login'
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await client
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single()
       setUser(profile)
 
-      const { data: unitsData } = await supabase
+      const { data: unitsData } = await client
         .from('units')
         .select('*')
       setUnits(unitsData || [])
 
       // Load kegiatan based on user's unit access
-      let query = supabase
+      let query = client
         .from('kegiatan')
         .select('*')
         .order('date', { ascending: false })
@@ -101,7 +103,7 @@ function AdminKegiatanContent() {
       setLoading(false)
     }
     loadData()
-  }, [supabase])
+  }, [])
 
   const canManageUnit = (unitId: string) => {
     if (!user) return false
@@ -142,6 +144,7 @@ function AdminKegiatanContent() {
   }
 
   const handleSave = async () => {
+    if (!supabase) return
     const payload = {
       ...formData,
       date: formData.date,
@@ -162,6 +165,7 @@ function AdminKegiatanContent() {
   }
 
   const handleDelete = async (id: number) => {
+    if (!supabase) return
     if (!confirm('Hapus kegiatan ini?')) return
     await supabase.from('kegiatan').delete().eq('id', id)
     setKegiatan(kegiatan.filter((k) => k.id !== id))
