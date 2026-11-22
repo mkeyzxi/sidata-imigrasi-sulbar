@@ -1,112 +1,262 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/supabase/database.types'
 import {
   ArrowLeft,
-  Lock,
-  Layers,
+  LogOut,
+  Users,
   FileEdit,
-  ShieldCheck,
-  Coins,
-  Image as ImageIcon,
-  ChevronRight,
-  Network,
-  TrendingUp,
+  Database,
+  LayoutDashboard,
+  Building2,
+  Shield,
+  Newspaper,
+  Plus,
+  CheckCircle,
+  X,
 } from 'lucide-react'
 
+type User = Database['public']['Tables']['profiles']['Row']
+
 export default function AdminPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const supabase = createSupabaseBrowserClient()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session?.user) {
+        window.location.href = '/login'
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile) {
+        setUser(profile as User)
+      }
+      setLoading(false)
+    }
+    checkAuth()
+  }, [supabase])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/'
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-[calc(100dvh-5rem)] bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-primary-dark border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-text/60 font-medium">Memuat data profil...</p>
+        </div>
+      </main>
+    )
+  }
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'superadmin': return 'Super Admin'
+      case 'admin_kanwil': return 'Admin Kanwil Sulbar'
+      case 'admin_mamuju': return 'Admin Imigrasi Mamuju'
+      case 'admin_polman': return 'Admin Imigrasi Polman'
+      default: return 'Viewer'
+    }
+  }
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'superadmin': return 'bg-accent/10 text-accent'
+      case 'admin_kanwil': return 'bg-blue-100 text-blue-700'
+      case 'admin_mamuju': return 'bg-green-100 text-green-700'
+      case 'admin_polman': return 'bg-purple-100 text-purple-700'
+      default: return 'bg-gray-100 text-gray-700'
+    }
+  }
+
   return (
-    <main className="min-h-screen bg-background text-text py-16 px-6">
-      {/* Contextual Back Navigation */}
-      <div className="max-w-3xl mx-auto mb-10">
-        <Link
-          href="/"
-          className="inline-flex items-center text-base font-semibold text-muted hover:text-primary transition-colors tracking-wide"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          KEMBALI KE HALAMAN UTAMA
-        </Link>
-      </div>
+    <main className="min-h-[calc(100dvh-5rem)] bg-background py-12 px-6">
+      <div className="max-w-5xl mx-auto">
 
-      <div className="max-w-3xl mx-auto">
-        {/* Administrative Header Box */}
-        <div className="bg-surface border border-border p-8 md:p-12 rounded-sm mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-blue-soft text-primary rounded-sm flex items-center justify-center shrink-0">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-sm font-bold uppercase tracking-widest text-accent block">
-                Sistem Terbatas
-              </span>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-primary-dark tracking-tight">
-                Panel Kontrol Administrator
-              </h1>
-            </div>
-          </div>
+        {/* Back Navigation */}
+        <div className="mb-10">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm font-bold text-text/60 hover:text-primary-dark transition-colors tracking-wider uppercase"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Kembali ke Beranda
+          </Link>
+        </div>
 
-          <p className="text-muted leading-relaxed mb-8 max-w-2xl">
-            Modul manajemen konten terpusat (CMS) untuk pengelolaan unit kerja, data layanan
-            keimigrasian, penambahan kegiatan, serta pencatatan realisasi anggaran saat ini berada
-            dalam tahap purwarupa *(Prototype Phase)* dan dijadwalkan pada fase pengembangan
-            berikutnya.
-          </p>
-
-          {/* Roadmap Fitur CMS */}
-          <div className="border border-border bg-background p-6 rounded-sm mb-8">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-heading mb-4 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary" />
-              Modul Manajemen yang Akan Hadir:
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base text-text">
-              <div className="flex items-center gap-2.5">
-                <Lock className="w-4 h-4 text-accent" />
-                <span>Autentikasi & Hak Akses Pegawai</span>
+        {/* User Profile Card */}
+        <div className="bg-surface rounded-2xl shadow-sm p-8 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-16 h-16 bg-primary-dark rounded-2xl flex items-center justify-center text-2xl font-black text-white">
+                {user?.full_name?.charAt(0) || 'U'}
               </div>
-              <div className="flex items-center gap-2.5">
-                <Network className="w-4 h-4 text-accent" />
-                <span>Manajemen Struktur Unit & Bidang</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <FileEdit className="w-4 h-4 text-accent" />
-                <span>CRUD Data Arsip & Kegiatan</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <TrendingUp className="w-4 h-4 text-accent" />
-                <span>Pembaruan Statistik Paspor & IT</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Coins className="w-4 h-4 text-accent" />
-                <span>Pencatatan Serapan Anggaran & PNBP</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <ImageIcon className="w-4 h-4 text-accent" />
-                <span>Media Library & Dokumentasi Foto</span>
+              <div>
+                <h1 className="text-2xl font-black text-primary-dark tracking-tight">
+                  {user?.full_name}
+                </h1>
+                <p className="text-text/60 font-medium">{user?.email}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getRoleColor(user?.role || '')}`}>
+                    {getRoleLabel(user?.role || '')}
+                  </span>
+                  {user?.unit_slug && (
+                    <span className="text-xs text-text/50 font-medium">
+                      Unit: {user.unit_slug}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Action Links */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link
-              href="/"
-              className="flex-center justify-center px-6 py-3 bg-primary text-white font-semibold text-base rounded-sm hover:bg-primary-dark transition-colors text-center"
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-5 py-2.5 bg-red-50 text-red-700 font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-red-100 transition-colors"
             >
-              Kembali ke Beranda
-            </Link>
-
-            <Link
-              href="/data"
-              className="flex-center justify-center px-6 py-3 bg-surface text-primary font-semibold text-base rounded-sm border border-secondary hover:bg-blue-soft/30 transition-colors text-center"
-            >
-              Eksplorasi Data Publik
-            </Link>
+              <LogOut className="w-4 h-4" />
+              Keluar
+            </button>
           </div>
         </div>
 
-        {/* System Status Footer */}
-        <div className="text-center">
-          <span className="text-sm font-medium text-muted uppercase tracking-wider">
-            Status Sistem: Prototype Phase 1 — UI/UX Mode Terstruktur
-          </span>
+        {/* Admin Dashboard */}
+        <div className="bg-surface rounded-2xl shadow-sm p-8">
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-accent mb-2">
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              Dashboard Administrator
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-heading tracking-tight">
+              Modul Pengelolaan Konten
+            </h2>
+            <p className="text-text/70 mt-2">
+              Kelola berita, kegiatan, dan data sesuai peran Anda
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Berita / Kegiatan */}
+            <Link
+              href={`/admin/kegiatan${user?.unit_slug ? `?unit=${user.unit_slug}` : ''}`}
+              className="group flex flex-col p-6 bg-background rounded-xl border border-border hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-accent/10 text-accent rounded-xl flex items-center justify-center">
+                  <Newspaper className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-heading group-hover:text-primary-dark transition-colors">
+                  Berita & Kegiatan
+                </h3>
+              </div>
+              <p className="text-sm text-text/70">
+                Tambah, edit, dan hapus artikel/kegiatan dari menu publik
+              </p>
+            </Link>
+
+            {/* Data */}
+            <Link
+              href={`/admin/data${user?.unit_slug ? `?unit=${user.unit_slug}` : ''}`}
+              className="group flex flex-col p-6 bg-background rounded-xl border border-border hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center">
+                  <Database className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-heading group-hover:text-primary-dark transition-colors">
+                  Data Statistik
+                </h3>
+              </div>
+              <p className="text-sm text-text/70">
+                Perbarui data paspor, izin tinggal, dan anggaran
+              </p>
+            </Link>
+
+            {/* User Management (Superadmin only) */}
+            {user?.role === 'superadmin' && (
+              <Link
+                href="/admin/users"
+                className="group flex flex-col p-6 bg-background rounded-xl border border-border hover:shadow-md transition-all md:col-span-2"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-heading group-hover:text-primary-dark transition-colors">
+                    Manajemen Pengguna
+                  </h3>
+                </div>
+                <p className="text-sm text-text/70">
+                  Kelola akun admin, tambah user, dan atur akses
+                </p>
+              </Link>
+            )}
+
+            {/* Unit Management */}
+            {user?.role === 'superadmin' && (
+              <Link
+                href="/admin/units"
+                className="group flex flex-col p-6 bg-background rounded-xl border border-border hover:shadow-md transition-all md:col-span-2"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-green-100 text-green-700 rounded-xl flex items-center justify-center">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-heading group-hover:text-primary-dark transition-colors">
+                    Manajemen Unit & Bidang
+                  </h3>
+                </div>
+                <p className="text-sm text-text/70">
+                  Kelola struktur organisasi dan unit kerja
+                </p>
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mt-8 bg-surface rounded-2xl shadow-sm p-8">
+          <h3 className="text-lg font-bold text-heading mb-6 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-accent" />
+            Informasi Akses
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-background rounded-xl p-4">
+              <div className="text-sm font-bold text-heading mb-2">Superadmin</div>
+              <p className="text-xs text-text/70">
+                Akses penuh ke semua menu, user, dan unit
+              </p>
+            </div>
+            <div className="bg-background rounded-xl p-4">
+              <div className="text-sm font-bold text-heading mb-2">Admin Unit</div>
+              <p className="text-xs text-text/70">
+                Kelola berita dan data untuk unit masing-masing
+              </p>
+            </div>
+            <div className="bg-background rounded-xl p-4">
+              <div className="text-sm font-bold text-heading mb-2">Viewer</div>
+              <p className="text-xs text-text/70">
+                Hanya dapat melihat data, tidak bisa edit
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </main>

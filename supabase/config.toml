@@ -1,0 +1,109 @@
+project_id = "sidata-imigrasi-sulbar"
+
+[api]
+# Change to "legacy_jwt" to use the old auth JWT tokens
+fallback_to_default_introspection = true
+enabled = true
+port = 54321
+schemas = ["public", "graphql"]
+extra_search_paths = ["supabase"]
+# For development, you can use a role with no restrictions and the default JWT
+# secret in the project. In production, Supabase Studio restricts the JWT secret
+# and adds a new API restriction on the default "service_role" role. You can find
+# the generated secret in the Supabase CLI `config` file.
+role_jwt_secret = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic3VwZXJzZXJ2aWNlciJ9.invalid"
+enable_rls = true
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 10
+max_client_conn = 100
+
+[studio]
+enabled = true
+# Port to use for the Studio server.
+port = 54323
+# Coordinate with `supabase stop -i` to avoid cleaning up things before the
+# server shuts down.
+api_port = 54324
+
+[auth]
+enabled = true
+# The base URL of your website. Used as a fallback for email template and redirect
+# URL when no redirect URL is provided.
+site_url = "http://localhost:3000"
+# List of *exact* URLs that auth providers are permitted to redirect to post authentication.
+additional_redirect_urls = ["localhost:54321/auth/callback/**"]
+# How long tokens are valid for. Keep to at least 60 minutes.
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+# Refresh tokens will be expired after this time. Set to zero to disable
+# expiration.
+refresh_token_expiry = 7200
+# If disabled, the refresh token will be permanently valid.
+enable_signup = true
+
+# Allow logging in with external providers.
+[auth.email]
+# Allow new user sign-up via email link.
+enable_signup = true
+# Frequency for limiting email signups.
+rate_limit_email_signup = "10/hour"
+# If disabled, the user needs to confirm their email address before being redirected to the site.
+enable_confirmations = false
+# If enabled, users need to check their inbox for a code and enter it on the login screen to confirm their email.
+doubleopt_in_confirmation = false
+# If enabled, users will need to reauthenticate or be logged out from all devices when the email is changed.
+secure_password_change = false
+# Maximum bytes that can be consumed by metadata in the auth.users table.
+user_metadata_max_size = 32768
+
+[auth.email.smtp]
+# If enabled, new users will be directed to confirm their email address before signing in.
+enable_confirmations = false
+
+[auth.saml]
+# If enabled, users will need to confirm their email before signing in.
+enable_confirmations = false
+# If enabled, users will be required to sign in with SAML.
+enabled = false
+
+[storage]
+enabled = true
+# The maximum file size for uploads to be allowed (in bytes)
+file_size_limit_kb = 51200
+# If set, the S3 region to use for storage.
+s3_bucket = ""
+# If set, the S3 endpoint to use for storage.
+s3_endpoint = ""
+s3_force_path_style = false
+
+[realtime]
+enabled = true
+# The maximum duration of the Realtime heartbeat.
+max_duration_secs = 36000
+
+[functions]
+enabled = true
+# The directory where function code files are stored
+invocations_otel_enabled = false
+
+[analytics]
+enabled = true
+# If enabled, the GCP project to send logs to
+gcp_project = ""
+# If set, the GCP project to send logs to
+# region = "us-central1"
+
+[edge_runtime]
+# The amount of time a function can run before being terminated.
+timeout = 50
+# The maximum number of functions that can be executed concurrently.
+max_concurrent_calls = 100

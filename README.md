@@ -1,6 +1,7 @@
 # ✅ IMPLEMENTASI SELESAI - SI DATA IMIGRASI SULBAR
 
 ## 🎉 Status: BERHASIL DIIMPLEMENTASIKAN
+*Nama kantor updated menjadi "Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat" (bukan Kemenkumham)*
 
 Development server berjalan di: **http://localhost:3000**
 
@@ -91,12 +92,25 @@ Development server berjalan di: **http://localhost:3000**
 
 ## 🎨 Design System Sesuai PRD
 
-### ✅ Warna
-- Primary Blue: #0B3A82
-- Secondary Blue: #1558A6  
-- Yellow Accent: #F4C542
-- Background: #F8FAFC
-- Kombinasi seimbang: 60% neutral, 25% blue, 5% yellow
+### ✅ Warna (Color System)
+
+#### Palette Utama
+- **Primary Blue: #0B3A82** - Warna utama untuk heading, navigation, elemen utama
+- **Secondary Blue: #1558A6** - Warna sekunder untuk hover states dan accents
+- **Yellow Accent: #F4C542** - Warna highlight untuk CTA, important numbers, badges
+- **Background: #F8FAFC** - Latar belakang halaman (neutral, bersih)
+
+#### Kombinasi Warna
+- **60% Neutral** (Background putih/abu-abu)
+- **25% Blue** (Primary & Secondary Blue untuk elemen utama)
+- **5% Yellow** (Accent untuk highlights dan call-to-action)
+- **10% Text/Shadow** (Text warna & efek shadow)
+
+#### Penerapan Warna
+- **Blue** digunakan pada: Navbar, heading, cards, buttons primary
+- **Yellow Accent** digunakan pada: Badges, numbers penting, hover effects, CTA buttons
+- **Gradient biru-kuning** digunakan pada hero section homepage
+- **Contrast warna** memastikan readability di semua device
 
 ### ✅ Typography
 - Font: Inter (Google Fonts)
@@ -190,6 +204,67 @@ Coba navigasi:
 7. ✅ Menu "Data" → Comparison table
 8. ✅ Menu "Tentang" → Info sistem
 9. ✅ Resize browser → Test responsive
+10. ✅ Klik "Masuk" → Login ke Supabase → Panel Admin
+
+## 🗄️ Supabase Integration
+
+This project is integrated with **Supabase** for backend services:
+
+### What's Included
+
+✅ **Authentication** - User login/logout with email/password
+✅ **Database** - 6 tables: profiles, units, bidang, kegiatan, serapan_anggaran, statistik_pendaftaran
+✅ **Seed Data** - Initial data migrated from hardcoded `lib/data/` files
+✅ **User Roles** - 4 roles: superadmin, admin_kanwil, admin_mamuju, admin_polman
+✅ **Row Level Security** - Fine-grained access control
+✅ **Admin Panel** - CRUD for kegiatan, data, and user management
+
+### File Structure
+
+```
+supabase/
+├── config.toml               # Supabase CLI configuration
+├── migrations/
+│   ├── 001_create_profiles.sql
+│   ├── 002_create_content_tables.sql
+│   └── 003_seed_data.sql
+└── create-admins.ts          # Admin user creation guide
+
+lib/
+└── supabase/
+    ├── client.ts             # Browser client
+    ├── server-client.ts      # Server client with auth
+    ├── server.ts             # Service role client
+    └── database.types.ts     # TypeScript types
+
+app/
+├── login/page.tsx            # Login page
+└── admin/
+    ├── layout.tsx            # Admin sidebar
+    ├── page.tsx              # Dashboard
+    ├── kegiatan/page.tsx     # CRUD berita/kegiatan
+    ├── data/page.tsx         # CRUD statistik
+    └── users/page.tsx        # User management
+```
+
+### Setup Steps
+
+1. **Run migrations** in Supabase SQL Editor (in order: 001 → 002 → 003)
+2. **Update `.env.local`** with your Supabase URL and keys
+3. **Create admin users** via Supabase Dashboard or `supabase/create-admins.ts`
+4. **Update roles** in profiles table for each admin user
+
+### User Roles
+
+| Role | Access |
+|------|--------|
+| **superadmin** | Full access to all modules |
+| **admin_kanwil** | Manage Kanwil Sulbar data |
+| **admin_mamuju** | Manage Imigrasi Mamuju data |
+| **admin_polman** | Manage Imigrasi Polman data |
+| **viewer** | Read-only access |
+
+See `SUPABASE_SETUP.md` for complete documentation.
 
 ## 🚀 Commands
 
