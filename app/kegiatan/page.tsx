@@ -59,7 +59,7 @@ export default function KegiatanPage() {
         </h1>
 
         <p className="text-lg sm:text-lg text-text/75 leading-relaxed max-w-3xl font-normal">
-          Arsip dan jadwal operasional dari Kantor Wilayah Sulawesi Barat, Imigrasi Mamuju, dan
+          Arsip dan jadwal operasional dari Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat, Imigrasi Mamuju, dan
           Imigrasi Polman.
         </p>
       </header>

@@ -519,7 +519,7 @@ Route:
 Halaman ini merupakan halaman utama untuk:
 
 ```text
-Kantor Wilayah Sulawesi Barat
+Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat
 ```
 
 Fokus utama:
@@ -636,7 +636,7 @@ Activity card:
 Sosialisasi Pelayanan Keimigrasian
 
 Bidang 1
-Kantor Wilayah Sulawesi Barat
+Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat
 
 Lihat kegiatan →
 ```
@@ -2027,7 +2027,7 @@ Open Activity Detail
 ```text
 /
 ↓
-Kantor Wilayah Sulawesi Barat
+Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat
 ↓
 3 Bidang
 ↓

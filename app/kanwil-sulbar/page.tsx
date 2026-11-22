@@ -36,7 +36,7 @@ export default function KanwilSulbarPage() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-black text-primary-dark tracking-tight leading-[1.08] mb-6">
-            Kantor Wilayah <br /> Sulawesi Barat
+            Kantor Wilayah <br /> Direktorat Jenderal Imigrasi Sulawesi Barat
           </h1>
 
           <p className="text-lg sm:text-lg text-text/75 leading-relaxed max-w-lg font-normal">
@@ -49,7 +49,7 @@ export default function KanwilSulbarPage() {
         <div className="lg:w-1/2 relative h-[320px] sm:h-[400px] w-full bg-surface rounded-2xl overflow-hidden shadow-md group">
           <Image
             src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80"
-            alt="Gedung Kantor Wilayah Sulawesi Barat"
+            alt="Gedung Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat"
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-105"
             priority
