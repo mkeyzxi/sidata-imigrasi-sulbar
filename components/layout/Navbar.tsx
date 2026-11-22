@@ -55,7 +55,7 @@ export default function Navbar() {
 
           <div className="hidden md:block">
             <Link
-              href="/admin"
+              href="/login"
               className="px-5 py-2.5 bg-[var(--color-primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--color-primary-dark)]"
             >
               Masuk
@@ -126,7 +126,7 @@ export default function Navbar() {
                 Tentang
               </Link>
               <Link
-                href="/admin"
+                href="/login"
                 className="inline-block px-5 py-2.5 bg-[var(--color-primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--color-primary-dark)] text-center"
                 onClick={() => setIsOpen(false)}
               >
