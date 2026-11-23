@@ -4,6 +4,8 @@ import Link from 'next/link'
 import {usePathname} from 'next/navigation'
 import {useState} from 'react'
 
+import Image from 'next/image'
+
 export default function Navbar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
@@ -16,13 +18,22 @@ export default function Navbar() {
     <nav className="bg-white border-b border-[var(--color-border)] sticky top-0 z-50">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10">
         <div className="flex items-center justify-between h-20">
-          <Link href="/" className="flex flex-col leading-tight">
-            <span className="text-[var(--color-primary)] font-bold text-lg tracking-tight">
-              SI DATA
-            </span>
-            <span className="text-[var(--color-primary)] font-bold text-sm tracking-tight">
-              IMIGRASI SULBAR
-            </span>
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/lambang.png"
+              alt="Logo Imigrasi Sulbar"
+              width={48}
+              height={48}
+              className="w-10 h-10 object-contain"
+            />
+            <div className="flex flex-col leading-tight">
+              <span className="text-[var(--color-primary)] font-bold text-lg tracking-tight uppercase">
+                SI DATA
+              </span>
+              <span className="text-[var(--color-primary)] font-bold text-xs tracking-tight uppercase opacity-80">
+                Imigrasi Sulbar
+              </span>
+            </div>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">

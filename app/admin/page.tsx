@@ -17,6 +17,8 @@ import {
   CheckCircle,
   X,
 } from 'lucide-react'
+import { roleLabel, roleColor } from '@/lib/utils/access'
+import { UNIT_SLUG_MAP } from '@/lib/utils/access'
 
 type User = {
   id: string
@@ -78,25 +80,9 @@ export default function AdminPage() {
     )
   }
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'superadmin': return 'Super Admin'
-      case 'admin_kanwil': return 'Admin Kanwil Sulbar'
-      case 'admin_mamuju': return 'Admin Imigrasi Mamuju'
-      case 'admin_polman': return 'Admin Imigrasi Polman'
-      default: return 'Viewer'
-    }
-  }
+  const getRoleLabel = (role: string) => roleLabel(role)
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'superadmin': return 'bg-accent/10 text-accent'
-      case 'admin_kanwil': return 'bg-blue-100 text-blue-700'
-      case 'admin_mamuju': return 'bg-green-100 text-green-700'
-      case 'admin_polman': return 'bg-purple-100 text-purple-700'
-      default: return 'bg-gray-100 text-gray-700'
-    }
-  }
+  const getRoleColor = (role: string) => roleColor(role)
 
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-background py-12 px-6">
@@ -131,7 +117,7 @@ export default function AdminPage() {
                   </span>
                   {user?.unit_slug && (
                     <span className="text-xs text-text/50 font-medium">
-                      Unit: {user.unit_slug}
+                      Unit: {UNIT_SLUG_MAP[user.unit_slug]?.label ?? user.unit_slug}
                     </span>
                   )}
                 </div>

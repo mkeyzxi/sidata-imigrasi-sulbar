@@ -2,20 +2,35 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import {
   ArrowLeft,
   Plus,
   Edit,
   Trash2,
-  Newspaper,
   Calendar,
   MapPin,
-  Image,
   Loader2,
   X,
+  AlertCircle,
 } from 'lucide-react'
+import { canManageUnit } from '@/lib/utils/access'
+import {
+  useToasts,
+  ToastViewport,
+  useConfirmDialog,
+  ConfirmDialog,
+} from '@/components/admin/feedback'
+
+type Profile = {
+  id: string
+  email: string | null
+  full_name: string | null
+  role: string
+  unit_slug: string | null
+  is_active: boolean
+}
 
 type Kegiatan = {
   id: number
@@ -46,14 +61,22 @@ type Unit = {
 }
 
 function AdminKegiatanContent() {
-  const searchParams = useSearchParams()
+  const router = useRouter()
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
   const [units, setUnits] = useState<Unit[]>([])
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<Kegiatan | null>(null)
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [savingError, setSavingError] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<Kegiatan | null>(null)
+  const [supabase] = useState<ReturnType<typeof createSupabaseBrowserClient>>(() =>
+    createSupabaseBrowserClient(),
+  )
+  const { toasts, push, dismiss } = useToasts()
+  const confirm = useConfirmDialog()
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -66,30 +89,27 @@ function AdminKegiatanContent() {
   })
 
   useEffect(() => {
-    const client = createSupabaseBrowserClient()
-    setSupabase(client)
-
     const loadData = async () => {
-      const { data: { session } } = await client.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        window.location.href = '/login'
+        router.push('/login')
         return
       }
 
-      const { data: profile } = await client
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single()
       setUser(profile)
 
-      const { data: unitsData } = await client
+      const { data: unitsData } = await supabase
         .from('units')
         .select('*')
       setUnits(unitsData || [])
 
       // Load kegiatan based on user's unit access
-      let query = client
+      let query = supabase
         .from('kegiatan')
         .select('*')
         .order('date', { ascending: false })
@@ -103,18 +123,12 @@ function AdminKegiatanContent() {
       setLoading(false)
     }
     loadData()
-  }, [])
+  }, [supabase, router])
 
-  const canManageUnit = (unitId: string) => {
-    if (!user) return false
-    if (user.role === 'superadmin') return true
-    if (user.role === 'admin_kanwil' && unitId === 'kanwil-sulbar') return true
-    if (user.role === 'admin_mamuju' && unitId === 'imigrasi-mamuju') return true
-    if (user.role === 'admin_polman' && unitId === 'imigrasi-polman') return true
-    return false
-  }
+  const canManageLocalUnit = (unitId: string) => canManageUnit(user, unitId)
 
   const openModal = (k?: Kegiatan) => {
+    setSavingError('')
     if (k) {
       setEditing(k)
       setFormData({
@@ -143,32 +157,95 @@ function AdminKegiatanContent() {
     setShowModal(true)
   }
 
-  const handleSave = async () => {
-    if (!supabase) return
-    const payload = {
-      ...formData,
-      date: formData.date,
+  const validateForm = (): string => {
+    if (!formData.title.trim()) return 'Judu kegiatan wajib diisi'
+    if (!formData.date) return 'Tanggal wajib diisi'
+    if (!formData.unit_id) return 'Pilih unit kerja'
+    if (!canManageUnit(user, formData.unit_id)) {
+      return 'Anda tidak berhak mengelola unit ini'
     }
+    return ''
+  }
 
-    if (editing) {
-      await supabase.from('kegiatan').update(payload).eq('id', editing.id)
-    } else {
-      await supabase.from('kegiatan').insert(payload)
+  const refetch = async () => {
+    let query = supabase
+      .from('kegiatan')
+      .select('*')
+      .order('date', { ascending: false })
+    if (user?.role !== 'superadmin' && user?.unit_slug) {
+      query = query.eq('unit_id', user.unit_slug)
     }
-
-    setShowModal(false)
-    // Refresh
-    const query = supabase.from('kegiatan').select('*').order('date', { ascending: false })
-    const filter = user?.role !== 'superadmin' && user?.unit_slug ? query.eq('unit_id', user.unit_slug) : query
-    const { data } = await filter
+    const { data } = await query
     setKegiatan(data || [])
   }
 
-  const handleDelete = async (id: number) => {
-    if (!supabase) return
-    if (!confirm('Hapus kegiatan ini?')) return
-    await supabase.from('kegiatan').delete().eq('id', id)
-    setKegiatan(kegiatan.filter((k) => k.id !== id))
+  const handleSave = async () => {
+    const err = validateForm()
+    if (err) {
+      setSavingError(err)
+      return
+    }
+    setSaving(true)
+    setSavingError('')
+
+    const payload = {
+      ...formData,
+    }
+
+    if (editing) {
+      const { error: dbError } = await supabase
+        .from('kegiatan')
+        .update(payload)
+        .eq('id', editing.id)
+      if (dbError) {
+        setSavingError('Gagal menyimpan: ' + dbError.message)
+        setSaving(false)
+        push('error', 'Gagal menyimpan perubahan kegiatan')
+        return
+      }
+      push('success', 'Kegiatan berhasil diperbarui')
+    } else {
+      const { error: dbError } = await supabase.from('kegiatan').insert(payload)
+      if (dbError) {
+        setSavingError('Gagal menyimpan: ' + dbError.message)
+        setSaving(false)
+        push('error', 'Gagal menambah kegiatan')
+        return
+      }
+      push('success', 'Kegiatan baru berhasil ditambahkan')
+    }
+
+    setShowModal(false)
+    setSaving(false)
+    await refetch()
+  }
+
+  const askDelete = (k: Kegiatan) => {
+    setPendingDelete(k)
+    confirm.openDialog({
+      title: 'Hapus kegiatan ini?',
+      description: k.title,
+      confirmLabel: 'Ya, Hapus',
+      danger: true,
+    })
+  }
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    const { error: dbError } = await supabase
+      .from('kegiatan')
+      .delete()
+      .eq('id', pendingDelete.id)
+    setDeleting(false)
+    confirm.closeDialog()
+    setPendingDelete(null)
+    if (dbError) {
+      push('error', 'Gagal menghapus: ' + dbError.message)
+    } else {
+      push('success', 'Kegiatan berhasil dihapus')
+      await refetch()
+    }
   }
 
   const getUnitName = (unitId: string) => {
@@ -254,7 +331,7 @@ function AdminKegiatanContent() {
                 </div>
               </div>
 
-              {canManageUnit(k.unit_id) && (
+              {canManageLocalUnit(k.unit_id) && (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => openModal(k)}
@@ -263,7 +340,7 @@ function AdminKegiatanContent() {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(k.id)}
+                    onClick={() => askDelete(k)}
                     className="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -291,6 +368,13 @@ function AdminKegiatanContent() {
                   </button>
                 </div>
 
+                {savingError && (
+                  <div className="mb-4 px-3 py-2.5 bg-red-50 text-red-700 text-sm rounded-xl flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{savingError}</span>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-heading mb-1.5">
@@ -303,7 +387,7 @@ function AdminKegiatanContent() {
                       disabled={user?.role !== 'superadmin'}
                     >
                       {units
-                        .filter((u) => canManageUnit(u.id))
+                        .filter((u) => canManageLocalUnit(u.id))
                         .map((u) => (
                           <option key={u.id} value={u.id}>
                             {u.short_name}
@@ -406,14 +490,17 @@ function AdminKegiatanContent() {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="flex-1 py-2.5 bg-background text-heading font-bold rounded-xl hover:bg-muted transition-colors"
+                    disabled={saving}
+                    className="flex-1 py-2.5 bg-background text-heading font-bold rounded-xl hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     Batal
                   </button>
                   <button
                     onClick={handleSave}
-                    className="flex-1 py-2.5 bg-primary-dark text-white font-bold rounded-xl hover:bg-primary transition-colors"
+                    disabled={saving}
+                    className="flex-1 py-2.5 bg-primary-dark text-white font-bold rounded-xl hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
+                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                     {editing ? 'Simpan Perubahan' : 'Tambah Kegiatan'}
                   </button>
                 </div>
@@ -421,6 +508,22 @@ function AdminKegiatanContent() {
             </div>
           </div>
         )}
+
+        <ToastViewport toasts={toasts} onDismiss={dismiss} />
+
+        <ConfirmDialog
+          state={{
+            ...confirm.state,
+            loading: deleting,
+            confirmLabel: 'Ya, Hapus',
+            danger: true,
+          }}
+          onConfirm={handleDelete}
+          onCancel={() => {
+            confirm.closeDialog()
+            setPendingDelete(null)
+          }}
+        />
       </div>
     </main>
   )

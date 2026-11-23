@@ -13,6 +13,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react'
+import { roleFromEmail, roleLabel, roleColor } from '@/lib/utils/access'
 
 type Profile = {
   id: string
@@ -69,24 +70,19 @@ export default function AdminUsersPage() {
     loadData()
   }, [])
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'superadmin': return 'Super Admin'
-      case 'admin_kanwil': return 'Admin Kanwil'
-      case 'admin_mamuju': return 'Admin Mamuju'
-      case 'admin_polman': return 'Admin Polman'
-      default: return 'Viewer'
-    }
-  }
+  const getRoleLabel = (role: string) => roleLabel(role)
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'superadmin': return 'bg-accent/10 text-accent'
-      case 'admin_kanwil': return 'bg-blue-100 text-blue-700'
-      case 'admin_mamuju': return 'bg-green-100 text-green-700'
-      case 'admin_polman': return 'bg-purple-100 text-purple-700'
-      default: return 'bg-gray-100 text-gray-600'
-    }
+  const getRoleColor = (role: string) => roleColor(role)
+
+  /** Jika email resmi, isi role & unit_slug otomatis. */
+  const handleEmailChange = (value: string) => {
+    const match = roleFromEmail(value)
+    setFormData((prev) => ({
+      ...prev,
+      email: value,
+      role: match.role,
+      unit_slug: match.unit_slug ?? (prev.role && prev.role.startsWith('admin') ? prev.unit_slug : ''),
+    }))
   }
 
   const handleCreateUser = async () => {
@@ -213,6 +209,9 @@ export default function AdminUsersPage() {
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getRoleColor(p.role)}`}>
                         {getRoleLabel(p.role)}
                       </span>
+                      {p.unit_slug && (
+                        <span className="ml-2 text-xs text-text/50">{p.unit_slug}</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-text/60">
                       {p.unit_slug || '—'}
@@ -261,7 +260,7 @@ export default function AdminUsersPage() {
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => handleEmailChange(e.target.value)}
                       className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       placeholder="nama@sidata-imigrasi-sulbar.go.id"
                     />

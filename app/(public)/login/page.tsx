@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Mail, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -59,9 +60,13 @@ export default function LoginPage() {
 
         <div className="bg-surface rounded-2xl shadow-sm p-8">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-primary-dark rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-7 h-7 text-white" />
-            </div>
+            <Image
+              src="/lambang.png"
+              alt="Logo Imigrasi Sulbar"
+              width={64}
+              height={64}
+              className="mx-auto mb-4 object-contain"
+            />
             <h1 className="text-2xl font-black text-primary-dark tracking-tight mb-2">
               Masuk ke Sistem
             </h1>
