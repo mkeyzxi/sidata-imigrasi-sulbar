@@ -11,16 +11,18 @@ import {
   ShieldAlert,
   Coins,
 } from 'lucide-react'
-import {
-  polmanPassportData,
-  polmanIzinTinggal,
-  polmanKegiatan,
-  polmanSerapanBulanan,
-} from '@/lib/data/polman'
+import { getPolmanData, getKegiatanList } from '@/lib/supabase/data-service'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import ActivityCard from '@/components/activities/ActivityCard'
 
-export default function ImigrasiPolmanPage() {
+export default async function ImigrasiPolmanPage() {
+  const data = await getPolmanData(2026)
+  const polmanKegiatan = await getKegiatanList({ unit_id: 'imigrasi-polman', limit: 4 })
+
+  const polmanPassportData = data.passportData
+  const polmanIzinTinggal = data.izinTinggal
+  const polmanSerapanBulanan = data.serapanBulanan
+
   const totalGantiPaspor = polmanPassportData.breakdown.penggantian
   const totalAnggaranTerserap = polmanSerapanBulanan.reduce((sum, item) => sum + item.jumlah, 0)
 

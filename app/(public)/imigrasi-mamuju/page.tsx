@@ -15,19 +15,24 @@ import {
   UserCheck,
   Coins,
 } from 'lucide-react'
-import {
-  mamujuPassportData,
-  mamujuIzinTinggal,
-  mamujuIntelWas,
-  mamujuKegiatan,
-  mamujuAnggaran,
-  mamujuPNBP,
-  mamujuSerapanBulanan,
-} from '@/lib/data/mamuju'
+import { getMamujuData, getKegiatanList } from '@/lib/supabase/data-service'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import ActivityCard from '@/components/activities/ActivityCard'
 
-export default function ImigasiMamujuPage() {
+export default async function ImigasiMamujuPage() {
+  const data = await getMamujuData(2026)
+  const mamujuKegiatan = await getKegiatanList({ unit_id: 'imigrasi-mamuju', limit: 4 })
+
+  const mamujuPassportData = data.passportData
+  const mamujuIzinTinggal = data.izinTinggal
+  const mamujuIntelWas = data.intelWas
+  const mamujuWNA = data.wna
+  const mamujuTAK = data.tak
+  const mamujuBAP = data.bap
+  const mamujuAnggaran = data.anggaran
+  const mamujuPNBP = data.pnbp
+  const mamujuSerapanBulanan = data.serapanBulanan
+
   const totalGantiPaspor =
     mamujuPassportData.breakdown.gantiMasaBerlaku.total +
     mamujuPassportData.breakdown.gantiHilang.total +

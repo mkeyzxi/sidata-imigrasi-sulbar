@@ -1,15 +1,20 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import {ArrowLeft, ArrowRight, Building2, Calendar, FileText, Network, Activity} from 'lucide-react'
-import {kanwilBidang, kanwilKegiatan, kanwilSerapanBidang} from '@/lib/data/kanwil'
+import { getKanwilData, getKegiatanList } from '@/lib/supabase/data-service'
 import ActivityCard from '@/components/activities/ActivityCard'
 import {formatCurrency} from '@/lib/utils/format'
 
-export default function KanwilSulbarPage() {
+export default async function KanwilSulbarPage() {
+  const kanwilData = await getKanwilData()
+  const kanwilKegiatan = await getKegiatanList({ unit_id: 'kanwil-sulbar' })
+  const kanwilBidang = kanwilData.bidang
+  const kanwilSerapanBidang = kanwilData.serapanByBidang
+
   const totalKegiatan = kanwilKegiatan.length
   const totalBidang = kanwilBidang.length
 
-  // Mengambil total serapan dari data dummy dengan aman
+  // Mengambil total serapan dari data Supabase dengan aman
   const totalAnggaranTerserap = kanwilSerapanBidang['bidang-1']
     ? kanwilSerapanBidang['bidang-1'].reduce((sum, item) => sum + item.jumlah, 0)
     : 0

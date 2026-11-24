@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, Activity, PieChart, CalendarDays, FolderOpen, Coins } from 'lucide-react'
-import { kanwilBidang, kanwilKegiatan, kanwilSerapanBidang } from '@/lib/data/kanwil'
+import { getBidangDetail } from '@/lib/supabase/data-service'
 import { formatCurrency } from '@/lib/utils/format'
 import ActivityCard from '@/components/activities/ActivityCard'
 
@@ -11,14 +11,13 @@ interface PageProps {
 
 export default async function BidangDetailPage({ params }: PageProps) {
   const { slug } = await params
-  const bidang = kanwilBidang.find((b) => b.slug === slug)
+  const detail = await getBidangDetail(slug)
 
-  if (!bidang) {
+  if (!detail || !detail.bidang) {
     notFound()
   }
 
-  const kegiatanBidang = kanwilKegiatan.filter((k) => k.bidang === bidang.name)
-  const serapanData = kanwilSerapanBidang[bidang.id as keyof typeof kanwilSerapanBidang] || []
+  const { bidang, kegiatan: kegiatanBidang, serapan: serapanData } = detail
   const totalSerapan = serapanData.reduce((sum, item) => sum + item.jumlah, 0)
 
   return (
