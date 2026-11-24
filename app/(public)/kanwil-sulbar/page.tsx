@@ -46,7 +46,7 @@ export default async function KanwilSulbarPage() {
 
           <p className="text-lg sm:text-lg text-text/75 leading-relaxed max-w-lg font-normal">
             Pusat koordinasi, administrasi, dan informasi data keimigrasian di lingkungan
-            Kementerian Hukum dan HAM wilayah Sulawesi Barat.
+            Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat.
           </p>
         </div>
 

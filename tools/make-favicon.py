@@ -65,7 +65,7 @@ ty2 = ty + 90
 draw.text((tx, ty2), "Imigrasi Sulbar", font=f_title, fill=WHITE)
 draw.text((510, 360), "Portal informasi dan data keimigrasian", font=f_sub, fill=(220, 228, 245, 255))
 draw.text((510, 405), "terintegrasi di wilayah Sulawesi Barat", font=f_sub, fill=(220, 228, 245, 255))
-draw.text((510, 470), "Kanwil Kemenkumham Sulawesi Barat", font=f_org, fill=GOLD)
+draw.text((510, 470), "Kanwil Ditjen Imigrasi Sulawesi Barat", font=f_org, fill=GOLD)
 
 canvas.save(PUBLIC / "og-image.png")
 print("og-image.png written (1200x630)")

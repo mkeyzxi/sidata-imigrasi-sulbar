@@ -114,7 +114,7 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
           <div className="lg:col-span-8">
             <div className="prose prose-lg max-w-none text-text/80 leading-relaxed">
               {kegiatan.description ? (
-                kegiatan.description.split('\n').map((para, i) => (
+                kegiatan.description.split('\n').map((para: string, i: number) => (
                   <p key={i} className="mb-6">
                     {para}
                   </p>
@@ -157,7 +157,7 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
             <div className="bg-primary-dark text-white rounded-2xl p-6 shadow-md">
               <h3 className="font-black mb-3 uppercase tracking-wider text-sm">Butuh Informasi?</h3>
               <p className="text-white/70 text-sm mb-6 leading-relaxed">
-                Hubungi layanan informasi resmi Kantor Wilayah Kemenkumham Sulawesi Barat untuk pertanyaan lebih lanjut.
+                Hubungi layanan informasi resmi Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat untuk pertanyaan lebih lanjut.
               </p>
               <button className="w-full py-3 bg-accent hover:bg-accent/90 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-colors">
                 Kontak Kami

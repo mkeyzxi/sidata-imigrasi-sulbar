@@ -41,9 +41,9 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 INSERT INTO public.bidang (id, unit_id, name, slug, description)
 VALUES
-  ('bidang-1', 'kanwil-sulbar', 'Bidang Pelayanan Hukum', 'bidang-pelayanan-hukum', 'Menangani pelayanan hukum dan bantuan hukum kepada masyarakat'),
-  ('bidang-2', 'kanwil-sulbar', 'Bidang Administrasi Hukum Umum', 'bidang-administrasi-hukum', 'Mengelola administrasi dan dokumentasi hukum umum'),
-  ('bidang-3', 'kanwil-sulbar', 'Bidang Hak Asasi Manusia', 'bidang-hak-asasi-manusia', 'Mengawasi dan mempromosikan hak asasi manusia')
+  ('bidang-1', 'kanwil-sulbar', 'Bagian Tata Usaha dan Umum', 'tata-usaha-dan-umum', 'Mengelola administrasi, kepegawaian, keuangan, dan rumah tangga kantor'),
+  ('bidang-2', 'kanwil-sulbar', 'Bidang Doklanintaltus', 'doklanintaltus', 'Bidang Dokumen Perjalanan, Izin Tinggal dan Sistem Informasi Keimigrasian'),
+  ('bidang-3', 'kanwil-sulbar', 'Bidang Gakkumpatnal', 'gakkumpatnal', 'Bidang Intelijen dan Penindakan Keimigrasian')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
@@ -53,10 +53,10 @@ ON CONFLICT (id) DO NOTHING;
 -- Kanwil Sulbar (4 kegiatan)
 INSERT INTO public.kegiatan (unit_id, bidang_id, title, description, date, location, type, image_url, published)
 VALUES
-  ('kanwil-sulbar', 'bidang-1', 'Sosialisasi Pelayanan Hukum', 'Sosialisasi pelayanan hukum kepada masyarakat', '2026-09-12', 'Mamuju', 'Pelayanan', 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80', true),
-  ('kanwil-sulbar', 'bidang-2', 'Workshop Administrasi Hukum', 'Pelatihan administrasi hukum untuk pegawai', '2026-09-18', 'Mamuju', 'Pelayanan', 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&q=80', true),
-  ('kanwil-sulbar', 'bidang-3', 'Monitoring HAM', 'Kegiatan monitoring penegakan HAM di wilayah Sulbar', '2026-09-23', 'Sulawesi Barat', 'Koordinasi', 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80', true),
-  ('kanwil-sulbar', 'bidang-1', 'Rapat Evaluasi Program', 'Evaluasi program pelayanan publik triwulan III', '2026-09-28', 'Mamuju', 'Koordinasi', 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80', true)
+  ('kanwil-sulbar', 'bidang-1', 'Rapat Koordinasi Internal', 'Rapat rutin koordinasi administrasi dan kepegawaian', '2026-09-12', 'Mamuju', 'Koordinasi', 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80', true),
+  ('kanwil-sulbar', 'bidang-2', 'Pelayanan Paspor Kolektif', 'Kegiatan jemput bola pelayanan paspor kepada masyarakat', '2026-09-18', 'Mamuju', 'Pelayanan', 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&q=80', true),
+  ('kanwil-sulbar', 'bidang-3', 'Operasi Gabungan Pengawasan', 'Kegiatan pengawasan orang asing bersama instansi terkait', '2026-09-23', 'Sulawesi Barat', 'Koordinasi', 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80', true),
+  ('kanwil-sulbar', 'bidang-1', 'Evaluasi Serapan Anggaran', 'Evaluasi pelaksanaan anggaran triwulan III', '2026-09-28', 'Mamuju', 'Koordinasi', 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Imigrasi Mamuju (4 kegiatan)
@@ -80,7 +80,7 @@ ON CONFLICT (id) DO NOTHING;
 -- 4. SERAPAN_ANGGARAN (3 bidang × 9 months)
 -- ============================================================
 
--- Bidang 1 (Pelayanan Hukum)
+-- Bidang 1 (Tata Usaha dan Umum)
 INSERT INTO public.serapan_anggaran (bidang_id, bulan, tahun, jumlah) VALUES
   ('bidang-1', 1, 2026, 12500000),
   ('bidang-1', 2, 2026, 15200000),
@@ -93,7 +93,7 @@ INSERT INTO public.serapan_anggaran (bidang_id, bulan, tahun, jumlah) VALUES
   ('bidang-1', 9, 2026, 21500000)
 ON CONFLICT (bidang_id, bulan, tahun) DO NOTHING;
 
--- Bidang 2 (Administrasi Hukum Umum)
+-- Bidang 2 (Doklanintaltus)
 INSERT INTO public.serapan_anggaran (bidang_id, bulan, tahun, jumlah) VALUES
   ('bidang-2', 1, 2026, 10200000),
   ('bidang-2', 2, 2026, 13500000),
@@ -106,7 +106,7 @@ INSERT INTO public.serapan_anggaran (bidang_id, bulan, tahun, jumlah) VALUES
   ('bidang-2', 9, 2026, 19200000)
 ON CONFLICT (bidang_id, bulan, tahun) DO NOTHING;
 
--- Bidang 3 (Hak Asasi Manusia)
+-- Bidang 3 (Gakkumpatnal)
 INSERT INTO public.serapan_anggaran (bidang_id, bulan, tahun, jumlah) VALUES
   ('bidang-3', 1, 2026, 9500000),
   ('bidang-3', 2, 2026, 12000000),

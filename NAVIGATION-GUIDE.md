@@ -11,7 +11,7 @@ Setelah website terbuka di http://localhost:3000, coba navigasi berikut:
 ### 2. Klik "Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat"
 - Hero dengan foto gedung
 - 3 Bidang yang bisa diklik
-- Klik salah satu bidang (misalnya "Bidang Pelayanan Hukum")
+- Klik salah satu bidang (misalnya "Bagian Tata Usaha dan Umum")
 - Lihat detail kegiatan dan tabel serapan anggaran dengan visualisasi bar
 
 ### 3. Kembali ke Home, klik "Imigrasi Mamuju"
