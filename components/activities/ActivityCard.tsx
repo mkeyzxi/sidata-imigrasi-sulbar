@@ -1,24 +1,27 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import {formatDate} from '@/lib/utils/format'
 
 interface ActivityCardProps {
+  id?: string | number
   title: string
   date: string
   bidang?: string
-  location: string
-  description: string
-  image: string
+  location?: string
+  description?: string
+  image?: string
 }
 
 export default function ActivityCard({
+  id,
   title,
   date,
   bidang,
-  location,
-  description,
-  image,
+  location = 'Sulawesi Barat',
+  description = '',
+  image = 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80',
 }: ActivityCardProps) {
-  return (
+  const Card = (
     <div className="bg-white rounded-xl overflow-hidden border border-[var(--color-border)] hover:shadow-md transition-shadow">
       <div className="aspect-[16/10] relative overflow-hidden">
         <Image
@@ -63,4 +66,13 @@ export default function ActivityCard({
       </div>
     </div>
   )
+
+  if (id) {
+    return (
+      <Link href={`/kegiatan/${id}`} className="block h-full">
+        {Card}
+      </Link>
+    )
+  }
+  return Card
 }

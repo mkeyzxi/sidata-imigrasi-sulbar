@@ -1,300 +1,134 @@
-# ✅ IMPLEMENTASI SELESAI - SI DATA IMIGRASI SULBAR
+# SI DATA IMIGRASI SULBAR
+> **Sistem Informasi & Portal Data Keimigrasian Terpadu**  
+> Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat
 
-## 🎉 Status: BERHASIL DIIMPLEMENTASIKAN
-*Nama kantor updated menjadi "Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat" (bukan Kemenkumham)*
-
-Development server berjalan di: **http://localhost:3000**
-
-## 📦 Yang Telah Dibuat
-
-### ✅ Core Files
-- `app/globals.css` - Design system dengan warna biru + kuning
-- `app/layout.tsx` - Root layout dengan Navbar & Footer
-- `next.config.ts` - Konfigurasi images dari Unsplash
-
-### ✅ Data Layer (lib/data/)
-- `units.ts` - Definisi 3 unit kerja
-- `kanwil.ts` - Data Kanwil Sulbar (3 bidang, kegiatan, anggaran)
-- `mamuju.ts` - Data Mamuju (dari PINTAS: 2.686 paspor, 8 izin tinggal, 93 Intel-WAS)
-- `polman.ts` - Data Polman (2.235 paspor, 66 izin tinggal)
-- `format.ts` - Helper functions untuk format currency, date, number
-
-### ✅ Components
-- `layout/Navbar.tsx` - Navigation dengan mobile menu
-- `layout/Footer.tsx` - Footer lengkap
-- `units/UnitCard.tsx` - Card untuk 3 unit kerja
-- `activities/ActivityCard.tsx` - Card untuk kegiatan
-- `statistics/StatCard.tsx` - Card untuk statistik
-
-### ✅ Pages (8 Halaman Lengkap)
-
-#### 1. Homepage (app/page.tsx)
-- Hero section dengan foto gedung + kombinasi biru-kuning
-- 3 unit kerja cards dengan foto dan deskripsi
-- Data snapshot: Total Paspor (4.921), Izin Tinggal (74), Kegiatan (4)
-- Kegiatan terbaru grid
-- CTA section
-
-#### 2. Kanwil Sulbar (app/kanwil-sulbar/page.tsx)
-- Hero dengan foto gedung Kanwil
-- Stats: 3 Bidang, 4 Kegiatan
-- List 3 bidang (Pelayanan Hukum, Administrasi Hukum, HAM)
-- Kegiatan grid
-
-#### 3. Detail Bidang (app/kanwil-sulbar/[slug]/page.tsx)
-- Breadcrumb navigation
-- Hero dengan gradient biru
-- Stats kegiatan dan total anggaran
-- Kegiatan per bidang
-- **Tabel serapan anggaran** dengan bar visualization
-
-#### 4. Imigrasi Mamuju (app/imigrasi-mamuju/page.tsx)
-**DATA DARI PINTAS:**
-- **Paspor**: 2.686 total (breakdown lengkap)
-- **Izin Tinggal**: ITK (4), ITAP (2), ITAS (2) - **TANPA PERSENTASE** ✓
-- **Intel-WAS**: 93 kegiatan, 554 petugas (breakdown per jenis)
-- **Anggaran**: Pagu 12.74M, Realisasi 8.73M (68.5%)
-- **PNBP**: Target 1.92M, Realisasi 2.13M (111.3%)
-- Kegiatan cards
-- Tabel serapan bulanan
-
-#### 5. Imigrasi Polman (app/imigrasi-polman/page.tsx)
-- Hero dengan foto gedung Polman
-- **Paspor**: 2.235 total
-- **Izin Tinggal**: ITK (21), ITAP (8), ITAS (37) - **TANPA PERSENTASE** ✓
-- **Timeline Intel-WAS** dengan visual timeline unik
-- Kegiatan cards dengan foto
-- Tabel serapan anggaran
-
-#### 6. Kegiatan (app/kegiatan/page.tsx)
-- Filter berdasarkan unit (All, Kanwil, Mamuju, Polman)
-- Search box untuk cari kegiatan
-- Grid semua kegiatan dari 3 unit
-- Results counter
-
-#### 7. Data (app/data/page.tsx)
-- Quick stats: 3 Unit, 4.921 Paspor, 74 Izin Tinggal
-- Cards untuk akses 3 unit
-- Kategori data (Paspor, Izin Tinggal, Intel-WAS, Anggaran)
-- **Tabel perbandingan** Mamuju vs Polman
-
-#### 8. Tentang (app/tentang/page.tsx)
-- Latar belakang sistem
-- Tujuan utama dan fitur
-- Detail 3 unit kerja
-- Target pengguna (Publik & Admin)
-- Stack teknologi
-- Warning: Data simulasi
-
-#### 9. Admin (app/admin/page.tsx)
-- Placeholder untuk fase 2
-- List fitur CMS yang akan datang
-
-## 🎨 Design System Sesuai PRD
-
-### ✅ Warna (Color System)
-
-#### Palette Utama
-- **Primary Blue: #0B3A82** - Warna utama untuk heading, navigation, elemen utama
-- **Secondary Blue: #1558A6** - Warna sekunder untuk hover states dan accents
-- **Yellow Accent: #F4C542** - Warna highlight untuk CTA, important numbers, badges
-- **Background: #F8FAFC** - Latar belakang halaman (neutral, bersih)
-
-#### Kombinasi Warna
-- **60% Neutral** (Background putih/abu-abu)
-- **25% Blue** (Primary & Secondary Blue untuk elemen utama)
-- **5% Yellow** (Accent untuk highlights dan call-to-action)
-- **10% Text/Shadow** (Text warna & efek shadow)
-
-#### Penerapan Warna
-- **Blue** digunakan pada: Navbar, heading, cards, buttons primary
-- **Yellow Accent** digunakan pada: Badges, numbers penting, hover effects, CTA buttons
-- **Gradient biru-kuning** digunakan pada hero section homepage
-- **Contrast warna** memastikan readability di semua device
-
-### ✅ Typography
-- Font: Inter (Google Fonts)
-- Hierarchy jelas: Display → H1 → H2 → H3 → Body → Eyebrow
-- Line-height optimal untuk readability
-- Letter-spacing pada heading
-
-### ✅ Layout & Spacing
-- Container max-width: 1280px
-- Padding responsive: 16-40px
-- Section spacing: 80-120px
-- Border radius: 8-16px
-- Grid: 12 cols (desktop) → 4 cols (mobile)
-
-### ✅ Components Pattern
-- **Unit Cards**: Foto gedung + number accent
-- **Activity Cards**: Foto + tanggal + lokasi
-- **Stat Cards**: Large number + label + subtitle
-- **Timeline**: Untuk Intel-WAS (visual unik)
-- **Tables**: Dengan bar visualization
-- **Buttons**: Primary (blue), Secondary (outline), Yellow (CTA)
-
-### ✅ Anti AI-Slop Rules Diterapkan
-- ❌ No gradient berlebihan
-- ❌ No glassmorphism
-- ❌ No glow effects
-- ❌ No fake decorative shapes
-- ❌ No excessive rounded cards
-- ✅ Real photography (Unsplash)
-- ✅ Editorial layout
-- ✅ Whitespace yang cukup
-- ✅ Data-focused presentation
-
-## 📊 Data Highlights
-
-### Mamuju (dari PINTAS)
-- Total Paspor: **2.686**
-- Izin Tinggal: **8** (ITK: 4, ITAP: 2, ITAS: 2)
-- Intel-WAS: **93 kegiatan**, 554 petugas
-- Anggaran: **68.5%** realisasi
-- PNBP: **111.3%** tercapai
-
-### Polman (dummy realistic)
-- Total Paspor: **2.235**
-- Izin Tinggal: **66** (ITK: 21, ITAP: 8, ITAS: 37)
-- Intel-WAS: **3 kegiatan** dalam timeline
-
-### Kanwil Sulbar
-- **3 Bidang**
-- **4 Kegiatan** aktif
-- Serapan anggaran per bidang dengan visualisasi
-
-## 🎯 Fitur Khusus
-
-1. **Izin Tinggal TANPA Persentase** ✓
-   - Hanya menampilkan jumlah absolut
-   - Sesuai arahan PRD
-
-2. **Data dari PINTAS Mamuju** ✓
-   - Paspor: 2.686 dengan breakdown detail
-   - Intel-WAS: 93 kegiatan, 554 petugas
-   - Anggaran & PNBP real
-
-3. **Timeline Visual** ✓
-   - Untuk Intel-WAS di Polman
-   - Vertical timeline dengan dots dan lines
-
-4. **Bar Visualization** ✓
-   - Pada tabel serapan anggaran
-   - Dynamic percentage calculation
-
-5. **Filter & Search** ✓
-   - Halaman kegiatan dengan multi-filter
-   - Real-time search
-
-6. **Responsive Design** ✓
-   - Mobile-first approach
-   - Breakpoints: 640px, 1024px, 1280px
-
-## 📱 Test di Browser
-
-Buka: **http://localhost:3000**
-
-Coba navigasi:
-1. ✅ Homepage → Hero section
-2. ✅ Klik "Kanwil Sulbar" → Lihat 3 bidang
-3. ✅ Klik salah satu bidang → Tabel anggaran
-4. ✅ Klik "Imigrasi Mamuju" → Data lengkap
-5. ✅ Klik "Imigrasi Polman" → Timeline Intel-WAS
-6. ✅ Menu "Kegiatan" → Filter & search
-7. ✅ Menu "Data" → Comparison table
-8. ✅ Menu "Tentang" → Info sistem
-9. ✅ Resize browser → Test responsive
-10. ✅ Klik "Masuk" → Login ke Supabase → Panel Admin
-
-## 🗄️ Supabase Integration
-
-This project is integrated with **Supabase** for backend services:
-
-### What's Included
-
-✅ **Authentication** - User login/logout with email/password
-✅ **Database** - 6 tables: profiles, units, bidang, kegiatan, serapan_anggaran, statistik_pendaftaran
-✅ **Seed Data** - Initial data migrated from hardcoded `lib/data/` files
-✅ **User Roles** - 4 roles: superadmin, admin_kanwil, admin_mamuju, admin_polman
-✅ **Row Level Security** - Fine-grained access control
-✅ **Admin Panel** - CRUD for kegiatan, data, and user management
-
-### File Structure
-
-```
-supabase/
-├── config.toml               # Supabase CLI configuration
-├── migrations/
-│   ├── 001_create_profiles.sql
-│   ├── 002_create_content_tables.sql
-│   └── 003_seed_data.sql
-└── create-admins.ts          # Admin user creation guide
-
-lib/
-└── supabase/
-    ├── client.ts             # Browser client
-    ├── server-client.ts      # Server client with auth
-    ├── server.ts             # Service role client
-    └── database.types.ts     # TypeScript types
-
-app/
-├── login/page.tsx            # Login page
-└── admin/
-    ├── layout.tsx            # Admin sidebar
-    ├── page.tsx              # Dashboard
-    ├── kegiatan/page.tsx     # CRUD berita/kegiatan
-    ├── data/page.tsx         # CRUD statistik
-    └── users/page.tsx        # User management
-```
-
-### Setup Steps
-
-1. **Run migrations** in Supabase SQL Editor (in order: 001 → 002 → 003)
-2. **Update `.env.local`** with your Supabase URL and keys
-3. **Create admin users** via Supabase Dashboard or `supabase/create-admins.ts`
-4. **Update roles** in profiles table for each admin user
-
-### User Roles
-
-| Role | Access |
-|------|--------|
-| **superadmin** | Full access to all modules |
-| **admin_kanwil** | Manage Kanwil Sulbar data |
-| **admin_mamuju** | Manage Imigrasi Mamuju data |
-| **admin_polman** | Manage Imigrasi Polman data |
-| **viewer** | Read-only access |
-
-See `SUPABASE_SETUP.md` for complete documentation.
-
-## 🚀 Commands
-
-```bash
-# Development
-pnpm dev
-
-# Build
-pnpm build
-
-# Production
-pnpm start
-```
-
-## ✨ Hasil Akhir
-
-Website **SI DATA IMIGRASI SULBAR** telah selesai diimplementasikan dengan:
-
-✅ **100% sesuai PRD & Design System**
-✅ **Data dari PINTAS Mamuju** (paspor, izin tinggal, intel-was)
-✅ **Izin Tinggal TANPA persentase** (sesuai arahan)
-✅ **Modern & profesional** (tidak terlihat AI-generated)
-✅ **Editorial layout** (bukan dashboard generic)
-✅ **Foto gedung nyata** sebagai identitas visual
-✅ **Kombinasi biru-kuning** konsisten
-✅ **Responsive** di semua device
-✅ **8 halaman lengkap** dengan routing
-✅ **Ready untuk demo/presentasi**
+Portal data resmi dan terpadu untuk koordinasi, pelaporan statistik layanan, publikasi kegiatan, dan pengelolaan data keimigrasian di seluruh unit kerja wilayah Sulawesi Barat (Kanwil Sulbar, Kanim Kelas II Non TPI Mamuju, dan Kanim Kelas II Non TPI Polman).
 
 ---
 
-**Website sudah berjalan di browser Anda!**
-**Refresh jika perlu: http://localhost:3000**
+## 🔑 Akun & Kredensial Akses
+
+Sistem menggunakan pembagian **2 Tingkat Peran Utama**:
+1. **Super Admin**: Mengelola seluruh sistem, memiliki hak akses penuh ke seluruh unit kerja, serta memegang kendali **Manajemen Pengguna** (membuat akun, menentukan peran, mengatur penugasan wilayah, dan mereset password).
+2. **Admin Biasa (Admin Unit / Bidang)**: Ditugaskan khusus untuk mengelola data unit/bidang kerjanya masing-masing (Kanwil Sulbar, Kanim Mamuju, atau Kanim Polman) dengan kemampuan **penuh CRUD (Create, Read, Update, Delete)** pada Berita/Kegiatan dan Data Statistik. Menu manajemen pengguna otomatis disembunyikan dan diproteksi.
+
+### Kredensial Akun Bawaan (Default):
+
+| Email | Password | Tingkat Peran | Wilayah / Unit Penugasan | Hak Akses |
+|---|---|---|---|---|
+| `superadmin@sidata-imigrasi-sulbar.go.id` | `superadmin@2026` | **Super Admin** | Semua Unit (Pusat) | Akses Penuh ke Semua Unit + Manajemen Pengguna (`/admin/users`) |
+| `admin.kanwil@sidata-imigrasi-sulbar.go.id` | `admin.kanwil@2026` | **Admin Biasa** | `kanwil-sulbar` | CRUD Kegiatan, Bidang, & Anggaran Kanwil Sulbar |
+| `admin.mamuju@sidata-imigrasi-sulbar.go.id` | `admin.mamuju@2026` | **Admin Biasa** | `imigrasi-mamuju` | CRUD Paspor, Izin Tinggal, & Kegiatan Kanim Mamuju |
+| `admin.polman@sidata-imigrasi-sulbar.go.id` | `admin.polman@2026` | **Admin Biasa** | `imigrasi-polman` | CRUD Paspor, Izin Tinggal, & Kegiatan Kanim Polman |
+
+> [!TIP]
+> Super Admin dapat menambahkan akun baru dengan alamat email bebas melalui menu **Manajemen Pengguna** (`/admin/users`), memilih peran (**Super Admin** atau **Admin Biasa**), serta memilih unit kerja yang ditugaskan.
+
+---
+
+## 🚀 Panduan Memulai Cepat
+
+### 1. Prasyarat
+- Node.js versi 18+ atau 20+
+- Package Manager `pnpm` (disarankan) atau `npm`
+
+### 2. Konfigurasi Lingkungan (`.env.local`)
+Pastikan file `.env.local` telah terisi kredensial Supabase Anda:
+
+
+### 3. Menjalankan Server Development
+```bash
+# Jalankan server lokal
+pnpm dev
+
+# Akses website publik di:
+http://localhost:3000
+
+# Akses halaman login admin di:
+http://localhost:3000/login
+```
+
+### 4. Build Produksi
+```bash
+pnpm build
+pnpm start
+```
+
+---
+
+## 🗄️ Arsitektur Integrasi Supabase
+
+Seluruh data website publik dan panel admin terhubung langsung dengan backend **Supabase**:
+
+### Tabel Database Utama
+1. `profiles`: Menyimpan data akun pengguna, peran (`role`), unit penugasan (`unit_slug`), dan status aktif.
+2. `units`: Data unit kerja keimigrasian (`kanwil-sulbar`, `imigrasi-mamuju`, `imigrasi-polman`).
+3. `bidang`: Struktur bidang organisasi di lingkungan Kanwil Sulbar.
+4. `kegiatan`: Direktori artikel, berita resmi, dan kegiatan operasional terpublikasi (`published = true`).
+5. `statistik_pendaftaran`: Rekapitulasi kuantitatif paspor, izin tinggal (ITK, ITAS, ITAP), WNA, TAK, BAP, intel-was, dan anggaran.
+6. `serapan_anggaran`: Realisasi penyerapan anggaran bulanan per bidang kerja.
+
+### File Migrasi SQL (`supabase/migrations/`)
+- `001_create_profiles.sql`: Pembuatan tabel `profiles` dan trigger profil otomatis saat registrasi.
+- `002_create_content_tables.sql`: Pembuatan tabel konten (`units`, `bidang`, `kegiatan`, `serapan_anggaran`, `statistik_pendaftaran`).
+- `003_seed_data.sql`: Data awal (seed) dari data riil PINTAS Mamuju & statistik regional Sulbar.
+- `004_strict_unit_rls.sql`: Aturan Row Level Security (RLS) berbasis unit kerja.
+- `005_seed_admins.sql`: Sinkronisasi profil 4 akun resmi ke database.
+- `006_complete_admin_crud_rls.sql`: Kebijakan RLS lengkap untuk Create, Read, Update, Delete per unit.
+- `007_profile_privilege_guard.sql`: Guard trigger keamanan profil.
+- `008_fix_rls_infinite_recursion.sql`: **Solusi RLS Infinite Recursion** menggunakan fungsi `SECURITY DEFINER` (`is_superadmin()`, `can_manage_unit()`) untuk keandalan query penuh.
+
+---
+
+## 🔌 API Routes Backend (Next.js App Router)
+
+Aplikasi dilengkapi API handler yang aman dengan validasi sesi dan izin RBAC:
+
+- **`GET /api/auth/profile`**: Mengambil profil pengguna yang sedang login secara independen dari RLS client.
+- **`/api/admin/users`**:
+  - `GET`: Mengambil daftar seluruh pengguna terdaftar (khusus Superadmin).
+  - `POST`: Membuat akun baru di Supabase Auth & profiles.
+  - `PATCH`: Memperbarui data pengguna, peran, unit penugasan, status aktif, atau password.
+  - `DELETE`: Menghapus pengguna secara permanen dari sistem.
+- **`/api/admin/kegiatan`**:
+  - `GET`: Mengambil daftar kegiatan (difilter berdasarkan unit kerja admin).
+  - `POST`: Menambah kegiatan baru untuk unit kerja yang diizinkan.
+  - `PATCH`: Mengedit kegiatan milik unit kerja admin.
+  - `DELETE`: Menghapus kegiatan milik unit kerja admin.
+- **`/api/admin/data`**:
+  - `GET`: Mengambil data statistik pendaftaran per unit.
+  - `POST`: Menambah data statistik layanan baru.
+  - `PATCH`: Memperbarui data statistik.
+  - `DELETE`: Menghapus entri data statistik.
+- **`GET /api/kegiatan`**: Endpoint publik untuk mengambil daftar kegiatan terbit dengan filter unit dan pencarian.
+
+---
+
+## 🌐 Halaman Website yang Terintegrasi
+
+| Rute Halaman | Kategori | Sumber Data Supabase |
+|---|---|---|
+| `/` | Beranda | Ringkasan unit kerja dan portal navigasi terpadu |
+| `/data` | Pusat Data Regional | Agregasi total paspor & izin tinggal dari `statistik_pendaftaran` |
+| `/kegiatan` | Direktori Kegiatan | Arsip berita terbit real-time dari tabel `kegiatan` |
+| `/kanwil-sulbar` | Unit Kanwil | Data bidang dari `bidang` & realisasi dari `serapan_anggaran` |
+| `/kanwil-sulbar/[slug]` | Rincian Bidang | Kegiatan spesifik bidang & tabel serapan anggaran bulanan |
+| `/imigrasi-mamuju` | Kanim Mamuju | Rincian data paspor, ITK/ITAS/ITAP, WNA, TAK dari database |
+| `/imigrasi-polman` | Kanim Polman | Rincian data paspor, izin tinggal, dan kegiatan dari database |
+| `/login` | Otentikasi | Login aman menggunakan Supabase Auth |
+| `/admin` | Dashboard Admin | Kartu ringkasan modul & informasi akses pengguna login |
+| `/admin/users` | Manajemen Pengguna | Pengelolaan akun Super Admin & Admin Biasa |
+| `/admin/kegiatan` | CMS Berita & Kegiatan | Panel CRUD kegiatan unit kerja |
+| `/admin/data` | CMS Data Statistik | Panel CRUD data layanan keimigrasian |
+
+---
+
+## 🎨 Design System
+
+- **Primary Blue**: `#0B3A82`
+- **Secondary Blue**: `#1558A6`
+- **Yellow Accent**: `#F4C542`
+- **Background**: `#F8FAFC`
+- **Font**: Inter (Google Fonts)
+- **Komposisi**: 60% Netral, 25% Biru Utama, 5% Aksen Kuning, 10% Teks/Kontras.
+- **Standar**: Desain editorial resmi instansi pemerintah, bersih, responsif, dan bebas elemen dekoratif artifisial.

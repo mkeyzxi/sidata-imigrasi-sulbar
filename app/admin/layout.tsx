@@ -66,6 +66,20 @@ export default function AdminLayout({
       // Tampilkan inisial dari email sesegera sesi tersedia (tidak perlu menunggu query profil)
       setUserEmail(session.user.email ?? null)
 
+      // Ambil profil login: panggil API endpoint server terlebih dahulu untuk menghindari RLS recursion
+      try {
+        const res = await fetch('/api/auth/profile')
+        if (res.ok) {
+          const json = await res.json()
+          if (!cancelled && json.profile) {
+            setProfile(json.profile as Profile)
+            return
+          }
+        }
+      } catch {
+        // Fallback ke browser client
+      }
+
       const { data } = await client
         .from('profiles')
         .select('id, full_name, email, role, unit_slug')

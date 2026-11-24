@@ -43,10 +43,10 @@ export default function Home() {
           {/* TITLE & DESCRIPTION */}
           <div className="my-auto py-6">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-primary-dark tracking-tight leading-[1.08] mb-6">
-              SI DATA <br />
+              Kemenimipas <br />
 
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-dark via-primary to-accent">
-                IMIGRASI SULBAR
+                 RI
               </span>
             </h1>
 
@@ -59,7 +59,7 @@ export default function Home() {
           {/* FOOTER */}
           <div className="hidden sm:flex items-center gap-3 text-sm text-text/50">
             <span className="font-medium">
-              Kemenkumham RI
+              Direktorat Jenderal Imigrasi
             </span>
 
             <span className="w-1 h-1 rounded-full bg-text/30" />

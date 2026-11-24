@@ -2,59 +2,59 @@
 export const kanwilBidang = [
   {
     id: "bidang-1",
-    name: "Bidang Pelayanan Hukum",
-    slug: "bidang-1",
-    description: "Menangani pelayanan hukum dan bantuan hukum kepada masyarakat"
+    name: "Bagian Tata Usaha dan Umum",
+    slug: "tata-usaha-dan-umum",
+    description: "Mengelola administrasi, kepegawaian, keuangan, dan rumah tangga kantor"
   },
   {
     id: "bidang-2",
-    name: "Bidang Administrasi Hukum Umum",
-    slug: "bidang-2",
-    description: "Mengelola administrasi dan dokumentasi hukum umum"
+    name: "Bidang Doklanintaltus",
+    slug: "doklanintaltus",
+    description: "Bidang Dokumen Perjalanan, Izin Tinggal dan Sistem Informasi Keimigrasian"
   },
   {
     id: "bidang-3",
-    name: "Bidang Hak Asasi Manusia",
-    slug: "bidang-3",
-    description: "Mengawasi dan mempromosikan hak asasi manusia"
+    name: "Bidang Gakkumpatnal",
+    slug: "gakkumpatnal",
+    description: "Bidang Intelijen dan Penindakan Keimigrasian"
   }
 ];
 
 export const kanwilKegiatan = [
   {
     id: "1",
-    title: "Sosialisasi Pelayanan Hukum",
+    title: "Rapat Koordinasi Internal",
     date: "2026-09-12",
-    bidang: "Bidang Pelayanan Hukum",
+    bidang: "Bagian Tata Usaha dan Umum",
     location: "Mamuju",
-    description: "Sosialisasi pelayanan hukum kepada masyarakat",
+    description: "Rapat rutin koordinasi administrasi dan kepegawaian",
     image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80"
   },
   {
     id: "2",
-    title: "Workshop Administrasi Hukum",
+    title: "Pelayanan Paspor Kolektif",
     date: "2026-09-18",
-    bidang: "Bidang Administrasi Hukum Umum",
+    bidang: "Bidang Doklanintaltus",
     location: "Mamuju",
-    description: "Pelatihan administrasi hukum untuk pegawai",
+    description: "Kegiatan jemput bola pelayanan paspor kepada masyarakat",
     image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&q=80"
   },
   {
     id: "3",
-    title: "Monitoring HAM",
+    title: "Operasi Gabungan Pengawasan",
     date: "2026-09-23",
-    bidang: "Bidang Hak Asasi Manusia",
+    bidang: "Bidang Gakkumpatnal",
     location: "Sulawesi Barat",
-    description: "Kegiatan monitoring penegakan HAM di wilayah Sulbar",
+    description: "Kegiatan pengawasan orang asing bersama instansi terkait",
     image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80"
   },
   {
     id: "4",
-    title: "Rapat Evaluasi Program",
+    title: "Evaluasi Serapan Anggaran",
     date: "2026-09-28",
-    bidang: "Bidang Pelayanan Hukum",
+    bidang: "Bagian Tata Usaha dan Umum",
     location: "Mamuju",
-    description: "Evaluasi program pelayanan publik triwulan III",
+    description: "Evaluasi pelaksanaan anggaran triwulan III",
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80"
   }
 ];

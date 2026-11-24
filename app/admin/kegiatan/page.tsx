@@ -102,19 +102,27 @@ function AdminKegiatanContent() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
-
-      // Samakan role/unit di DB dengan email resmi (self-heal) supaya
-      // RLS di database ikut mengizinkan CRUD — bukan hanya UI-nya.
-      let resolved = profile as Profile | null
-      if (resolved) {
-        const synced = await syncOfficialProfile(supabase, resolved)
-        if (synced) resolved = { ...resolved, ...synced }
+      // Ambil profil login via server endpoint (bebas infinite recursion)
+      let resolved: Profile | null = null
+      try {
+        const res = await fetch('/api/auth/profile')
+        if (res.ok) {
+          const json = await res.json()
+          resolved = json.profile as Profile
+        }
+      } catch {
+        // Fallback
       }
+
+      if (!resolved) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        resolved = profile as Profile | null
+      }
+
       setUser(resolved)
 
       const { data: unitsData } = await supabase
@@ -124,7 +132,23 @@ function AdminKegiatanContent() {
 
       const localAccess = effectiveAccess(resolved)
 
-      // Load kegiatan based on user's unit access
+      // Ambil daftar kegiatan via API admin
+      try {
+        const token = session.access_token
+        const res = await fetch(
+          `/api/admin/kegiatan${localAccess.role !== 'superadmin' && localAccess.unit_slug ? `?unit_id=${localAccess.unit_slug}` : ''}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+        )
+        if (res.ok) {
+          const json = await res.json()
+          setKegiatan(json.kegiatan || [])
+          setLoading(false)
+          return
+        }
+      } catch {
+        // Fallback ke browser client
+      }
+
       let query = supabase
         .from('kegiatan')
         .select('*')
@@ -196,6 +220,22 @@ function AdminKegiatanContent() {
   }
 
   const refetch = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch(
+        `/api/admin/kegiatan${access.role !== 'superadmin' && access.unit_slug ? `?unit_id=${access.unit_slug}` : ''}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+      )
+      if (res.ok) {
+        const json = await res.json()
+        setKegiatan(json.kegiatan || [])
+        return
+      }
+    } catch {
+      // Fallback
+    }
+
     let query = supabase
       .from('kegiatan')
       .select('*')
@@ -218,34 +258,60 @@ function AdminKegiatanContent() {
 
     const payload = {
       ...formData,
+      ...(editing ? { id: editing.id } : {}),
     }
 
-    if (editing) {
-      const { error: dbError } = await supabase
-        .from('kegiatan')
-        .update(payload)
-        .eq('id', editing.id)
-      if (dbError) {
-        setSavingError('Gagal menyimpan: ' + dbError.message)
-        setSaving(false)
-        push('error', 'Gagal menyimpan perubahan kegiatan')
-        return
-      }
-      push('success', 'Kegiatan berhasil diperbarui')
-    } else {
-      const { error: dbError } = await supabase.from('kegiatan').insert(payload)
-      if (dbError) {
-        setSavingError('Gagal menyimpan: ' + dbError.message)
-        setSaving(false)
-        push('error', 'Gagal menambah kegiatan')
-        return
-      }
-      push('success', 'Kegiatan baru berhasil ditambahkan')
-    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch('/api/admin/kegiatan', {
+        method: editing ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      })
 
-    setShowModal(false)
-    setSaving(false)
-    await refetch()
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal menyimpan data kegiatan.')
+      }
+
+      push('success', editing ? 'Kegiatan berhasil diperbarui' : 'Kegiatan baru berhasil ditambahkan')
+      setShowModal(false)
+      setSaving(false)
+      await refetch()
+    } catch (apiErr: unknown) {
+      // Coba fallback ke browser client langsung jika API gagal
+      const errorMsg = apiErr instanceof Error ? apiErr.message : 'Gagal menyimpan'
+      if (editing) {
+        const { error: dbError } = await supabase
+          .from('kegiatan')
+          .update(payload)
+          .eq('id', editing.id)
+        if (dbError) {
+          setSavingError('Gagal menyimpan: ' + (dbError.message || errorMsg))
+          setSaving(false)
+          push('error', 'Gagal menyimpan perubahan kegiatan')
+          return
+        }
+        push('success', 'Kegiatan berhasil diperbarui')
+      } else {
+        const { error: dbError } = await supabase.from('kegiatan').insert(payload)
+        if (dbError) {
+          setSavingError('Gagal menyimpan: ' + (dbError.message || errorMsg))
+          setSaving(false)
+          push('error', 'Gagal menambah kegiatan')
+          return
+        }
+        push('success', 'Kegiatan baru berhasil ditambahkan')
+      }
+
+      setShowModal(false)
+      setSaving(false)
+      await refetch()
+    }
   }
 
   const askDelete = (k: Kegiatan) => {
@@ -261,18 +327,35 @@ function AdminKegiatanContent() {
   const handleDelete = async () => {
     if (!pendingDelete) return
     setDeleting(true)
-    const { error: dbError } = await supabase
-      .from('kegiatan')
-      .delete()
-      .eq('id', pendingDelete.id)
-    setDeleting(false)
-    confirm.closeDialog()
-    setPendingDelete(null)
-    if (dbError) {
-      push('error', 'Gagal menghapus: ' + dbError.message)
-    } else {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch(`/api/admin/kegiatan?id=${pendingDelete.id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal menghapus kegiatan.')
+      }
       push('success', 'Kegiatan berhasil dihapus')
       await refetch()
+    } catch (apiErr: unknown) {
+      // Fallback ke browser client
+      const { error: dbError } = await supabase
+        .from('kegiatan')
+        .delete()
+        .eq('id', pendingDelete.id)
+      if (dbError) {
+        push('error', 'Gagal menghapus: ' + dbError.message)
+      } else {
+        push('success', 'Kegiatan berhasil dihapus')
+        await refetch()
+      }
+    } finally {
+      setDeleting(false)
+      confirm.closeDialog()
+      setPendingDelete(null)
     }
   }
 

@@ -14,17 +14,25 @@ import {
   Compass,
 } from 'lucide-react'
 import { units } from '@/lib/data/units'
-import { mamujuPassportData, mamujuIzinTinggal } from '@/lib/data/mamuju'
-import { polmanPassportData, polmanIzinTinggal } from '@/lib/data/polman'
+import { getRegionalStats, getMamujuData, getPolmanData } from '@/lib/supabase/data-service'
 import { formatNumber } from '@/lib/utils/format'
 
-export default function DataPage() {
-  const totalPasporSulbar = mamujuPassportData.total + polmanPassportData.total
-  const totalIzinTinggalSulbar = mamujuIzinTinggal.total + polmanIzinTinggal.total
+export default async function DataPage() {
+  const stats = await getRegionalStats(2026)
+  const mamuju = await getMamujuData(2026)
+  const polman = await getPolmanData(2026)
 
-  const totalItk = mamujuIzinTinggal.itk + polmanIzinTinggal.itk
-  const totalItap = mamujuIzinTinggal.itap + polmanIzinTinggal.itap
-  const totalItas = mamujuIzinTinggal.itas + polmanIzinTinggal.itas
+  const mamujuPassportData = mamuju.passportData
+  const mamujuIzinTinggal = mamuju.izinTinggal
+  const polmanPassportData = polman.passportData
+  const polmanIzinTinggal = polman.izinTinggal
+
+  const totalPasporSulbar = stats.totalPasporSulbar
+  const totalIzinTinggalSulbar = stats.totalIzinTinggalSulbar
+
+  const totalItk = stats.totalItk
+  const totalItap = stats.totalItap
+  const totalItas = stats.totalItas
 
   // Helper untuk menghitung persentase proporsi
   const getPercentage = (value: number, total: number) => {

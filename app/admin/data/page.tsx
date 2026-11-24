@@ -133,25 +133,50 @@ export default function AdminDataPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
-
-      // Samakan role/unit di DB dengan email resmi (self-heal) supaya
-      // RLS di database ikut mengizinkan CRUD — bukan hanya UI-nya.
-      let resolved = profile as Profile | null
-      if (resolved) {
-        const synced = await syncOfficialProfile(supabase, resolved)
-        if (synced) resolved = { ...resolved, ...synced }
+      // Ambil profil login via server endpoint (bebas infinite recursion)
+      let resolved: Profile | null = null
+      try {
+        const res = await fetch('/api/auth/profile')
+        if (res.ok) {
+          const json = await res.json()
+          resolved = json.profile as Profile
+        }
+      } catch {
+        // Fallback
       }
+
+      if (!resolved) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        resolved = profile as Profile | null
+      }
+
       setUser(resolved)
 
       const { data: unitsData } = await supabase.from('units').select('*')
       setUnits(unitsData || [])
 
       const localAccess = effectiveAccess(resolved)
+
+      // Ambil statistik via API server
+      try {
+        const token = session.access_token
+        const res = await fetch(
+          `/api/admin/data${localAccess.role !== 'superadmin' && localAccess.unit_slug ? `?unit_id=${localAccess.unit_slug}` : ''}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+        )
+        if (res.ok) {
+          const json = await res.json()
+          setStatistik(json.statistik || [])
+          setLoading(false)
+          return
+        }
+      } catch {
+        // Fallback
+      }
 
       let query = supabase
         .from('statistik_pendaftaran')
@@ -267,6 +292,22 @@ export default function AdminDataPage() {
   }
 
   const refetch = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch(
+        `/api/admin/data${access.role !== 'superadmin' && access.unit_slug ? `?unit_id=${access.unit_slug}` : ''}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+      )
+      if (res.ok) {
+        const json = await res.json()
+        setStatistik(json.statistik || [])
+        return
+      }
+    } catch {
+      // Fallback
+    }
+
     let query = supabase
       .from('statistik_pendaftaran')
       .select('*')
@@ -289,6 +330,7 @@ export default function AdminDataPage() {
     setSavingError('')
 
     const payload = {
+      ...(editing ? { id: editing.id } : {}),
       unit_id: formData.unit_id,
       kategori: formData.kategori.trim(),
       sub_kategori: formData.sub_kategori.trim() || null,
@@ -298,34 +340,59 @@ export default function AdminDataPage() {
       tahun: parseInt(formData.tahun.toString()),
     }
 
-    if (editing) {
-      const { error: dbError } = await supabase
-        .from('statistik_pendaftaran')
-        .update(payload)
-        .eq('id', editing.id)
-      if (dbError) {
-        setSavingError('Gagal menyimpan: ' + dbError.message)
-        setSaving(false)
-        push('error', 'Gagal menyimpan perubahan')
-        return
-      }
-      push('success', 'Data berhasil diperbarui')
-    } else {
-      const { error: dbError } = await supabase
-        .from('statistik_pendaftaran')
-        .insert(payload)
-      if (dbError) {
-        setSavingError('Gagal menyimpan: ' + dbError.message)
-        setSaving(false)
-        push('error', 'Gagal menambah data')
-        return
-      }
-      push('success', 'Data baru berhasil ditambahkan')
-    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch('/api/admin/data', {
+        method: editing ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      })
 
-    setShowModal(false)
-    setSaving(false)
-    await refetch()
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal menyimpan data statistik.')
+      }
+
+      push('success', editing ? 'Data berhasil diperbarui' : 'Data baru berhasil ditambahkan')
+      setShowModal(false)
+      setSaving(false)
+      await refetch()
+    } catch (apiErr: unknown) {
+      // Coba fallback ke browser client
+      const errorMsg = apiErr instanceof Error ? apiErr.message : 'Gagal menyimpan'
+      if (editing) {
+        const { error: dbError } = await supabase
+          .from('statistik_pendaftaran')
+          .update(payload)
+          .eq('id', editing.id)
+        if (dbError) {
+          setSavingError('Gagal menyimpan: ' + (dbError.message || errorMsg))
+          setSaving(false)
+          push('error', 'Gagal menyimpan perubahan')
+          return
+        }
+        push('success', 'Data berhasil diperbarui')
+      } else {
+        const { error: dbError } = await supabase
+          .from('statistik_pendaftaran')
+          .insert(payload)
+        if (dbError) {
+          setSavingError('Gagal menyimpan: ' + (dbError.message || errorMsg))
+          setSaving(false)
+          push('error', 'Gagal menambah data')
+          return
+        }
+        push('success', 'Data baru berhasil ditambahkan')
+      }
+
+      setShowModal(false)
+      setSaving(false)
+      await refetch()
+    }
   }
 
   const askDelete = (s: Statistik) => {
@@ -341,18 +408,35 @@ export default function AdminDataPage() {
   const handleDelete = async () => {
     if (!pendingDelete) return
     setDeleting(true)
-    const { error: dbError } = await supabase
-      .from('statistik_pendaftaran')
-      .delete()
-      .eq('id', pendingDelete.id)
-    setDeleting(false)
-    confirm.closeDialog()
-    setPendingDelete(null)
-    if (dbError) {
-      push('error', 'Gagal menghapus: ' + dbError.message)
-    } else {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch(`/api/admin/data?id=${pendingDelete.id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal menghapus data.')
+      }
       push('success', 'Data berhasil dihapus')
       await refetch()
+    } catch (apiErr: unknown) {
+      // Fallback ke browser client
+      const { error: dbError } = await supabase
+        .from('statistik_pendaftaran')
+        .delete()
+        .eq('id', pendingDelete.id)
+      if (dbError) {
+        push('error', 'Gagal menghapus: ' + dbError.message)
+      } else {
+        push('success', 'Data berhasil dihapus')
+        await refetch()
+      }
+    } finally {
+      setDeleting(false)
+      confirm.closeDialog()
+      setPendingDelete(null)
     }
   }
 

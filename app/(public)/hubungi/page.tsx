@@ -18,11 +18,11 @@ import {
 const contactInfo = [
   {
     icon: Building2,
-    title: 'Kanwil Kemenkumham Sulawesi Barat',
+    title: 'Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat',
     items: [
       'Jl. KH. Ahmad Dahlan No. 1, Mamuju, Sulawesi Barat',
       '(0241) 767112',
-      'kanwil.sulbar@kumham.go.id',
+      'kanwil.sulbar@imigrasi.go.id',
     ],
   },
   {
@@ -31,7 +31,7 @@ const contactInfo = [
     items: [
       'Jl. Lanto Djupe No. 36, Mamuju, Sulawesi Barat',
       '(0241) 762543',
-      'imigrasi.mamuju@kumham.go.id',
+      'imigrasi.mamuju@imigrasi.go.id',
     ],
   },
   {
@@ -40,7 +40,7 @@ const contactInfo = [
     items: [
       'Jl. Soekarno-Hatta, Polewali Mandar, Sulawesi Barat',
       '(0241) 473201',
-      'imigrasi.polman@kumham.go.id',
+      'imigrasi.polman@imigrasi.go.id',
     ],
   },
 ]

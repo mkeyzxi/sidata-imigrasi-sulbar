@@ -49,6 +49,21 @@ export default function AdminPage() {
         return
       }
 
+      // Ambil profil login via server endpoint (bebas infinite recursion)
+      try {
+        const res = await fetch('/api/auth/profile')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.profile) {
+            setUser(json.profile as User)
+            setLoading(false)
+            return
+          }
+        }
+      } catch {
+        // Fallback ke browser client
+      }
+
       const { data: profile } = await client
         .from('profiles')
         .select('*')
@@ -201,27 +216,7 @@ export default function AdminPage() {
                   </h3>
                 </div>
                 <p className="text-sm text-text/70">
-                  Kelola akun admin, tambah user, dan atur akses
-                </p>
-              </Link>
-            )}
-
-            {/* Unit Management */}
-            {user?.role === 'superadmin' && (
-              <Link
-                href="/admin/units"
-                className="group flex flex-col p-6 bg-background rounded-xl border border-border hover:shadow-md transition-all md:col-span-2"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-green-100 text-green-700 rounded-xl flex items-center justify-center">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-heading group-hover:text-primary-dark transition-colors">
-                    Manajemen Unit & Bidang
-                  </h3>
-                </div>
-                <p className="text-sm text-text/70">
-                  Kelola struktur organisasi dan unit kerja
+                  Kelola akun Super Admin dan Admin Unit (Kanwil Sulbar, Kanim Mamuju, Kanim Polman)
                 </p>
               </Link>
             )}

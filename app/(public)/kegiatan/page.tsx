@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Search, SearchX, Filter, CalendarDays, Building2 } from 'lucide-react'
+import { ArrowLeft, Search, SearchX, Filter, CalendarDays, Loader2, Building2 } from 'lucide-react'
 import ActivityCard from '@/components/activities/ActivityCard'
 import { kanwilKegiatan } from '@/lib/data/kanwil'
 import { mamujuKegiatan } from '@/lib/data/mamuju'
@@ -15,22 +15,55 @@ const UNIT_FILTERS = [
   { id: 'Imigrasi Polman', label: 'Polman' },
 ]
 
+type ActivityItem = {
+  id: string | number
+  title: string
+  date: string
+  location?: string
+  type?: string
+  description?: string
+  image?: string
+  unit: string
+}
+
 export default function KegiatanPage() {
-  const allKegiatan = [
+  const defaultKegiatan: ActivityItem[] = [
     ...kanwilKegiatan.map((k) => ({ ...k, unit: 'Kanwil Sulbar' })),
     ...mamujuKegiatan.map((k) => ({ ...k, unit: 'Imigrasi Mamuju' })),
     ...polmanKegiatan.map((k) => ({ ...k, unit: 'Imigrasi Polman' })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
+  const [allKegiatan, setAllKegiatan] = useState<ActivityItem[]>(defaultKegiatan)
+  const [loading, setLoading] = useState(true)
   const [filterUnit, setFilterUnit] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
+
+  // Muat data langsung dari Supabase melalui API
+  useEffect(() => {
+    async function fetchKegiatan() {
+      try {
+        const res = await fetch('/api/kegiatan')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.kegiatan && json.kegiatan.length > 0) {
+            setAllKegiatan(json.kegiatan)
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal memuat kegiatan dari API:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchKegiatan()
+  }, [])
 
   const filteredKegiatan = allKegiatan.filter((kegiatan) => {
     const matchUnit = filterUnit === 'all' || kegiatan.unit === filterUnit
     const matchSearch =
       searchQuery === '' ||
       kegiatan.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      kegiatan.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (kegiatan.description || '').toLowerCase().includes(searchQuery.toLowerCase())
     return matchUnit && matchSearch
   })
 
