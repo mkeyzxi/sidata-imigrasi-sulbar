@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -15,7 +15,13 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react'
-import { canManageUnit } from '@/lib/utils/access'
+import {
+  canManageUnit,
+  roleLabel,
+  UNIT_SLUG_MAP,
+  effectiveAccess,
+  syncOfficialProfile,
+} from '@/lib/utils/access'
 import {
   useToasts,
   ToastViewport,
@@ -101,12 +107,22 @@ function AdminKegiatanContent() {
         .select('*')
         .eq('id', session.user.id)
         .single()
-      setUser(profile)
+
+      // Samakan role/unit di DB dengan email resmi (self-heal) supaya
+      // RLS di database ikut mengizinkan CRUD — bukan hanya UI-nya.
+      let resolved = profile as Profile | null
+      if (resolved) {
+        const synced = await syncOfficialProfile(supabase, resolved)
+        if (synced) resolved = { ...resolved, ...synced }
+      }
+      setUser(resolved)
 
       const { data: unitsData } = await supabase
         .from('units')
         .select('*')
       setUnits(unitsData || [])
+
+      const localAccess = effectiveAccess(resolved)
 
       // Load kegiatan based on user's unit access
       let query = supabase
@@ -114,8 +130,8 @@ function AdminKegiatanContent() {
         .select('*')
         .order('date', { ascending: false })
 
-      if (profile && profile.role !== 'superadmin' && profile.unit_slug) {
-        query = query.eq('unit_id', profile.unit_slug)
+      if (localAccess.role !== 'superadmin' && localAccess.unit_slug) {
+        query = query.eq('unit_id', localAccess.unit_slug)
       }
 
       const { data: kegiatanData } = await query
@@ -125,7 +141,19 @@ function AdminKegiatanContent() {
     loadData()
   }, [supabase, router])
 
-  const canManageLocalUnit = (unitId: string) => canManageUnit(user, unitId)
+  // Peran efektif: email resmi jadi sumber kebenaran bila role di DB belum terset
+  const access = useMemo(() => effectiveAccess(user), [user])
+
+  // Tombol aksi hanya untuk superadmin & admin unit
+  const canManageAny = access.role === 'superadmin' || access.role.startsWith('admin')
+
+  // Pilihan unit untuk dropdown (fallback ke daftar statis bila tabel kosong)
+  const unitOptions = useMemo(() => {
+    if (units.length > 0) return units.map((u) => ({ id: u.id, label: u.short_name || u.id }))
+    return Object.entries(UNIT_SLUG_MAP).map(([id, v]) => ({ id, label: v.label }))
+  }, [units])
+
+  const canManageLocalUnit = (unitId: string) => canManageUnit(access, unitId)
 
   const openModal = (k?: Kegiatan) => {
     setSavingError('')
@@ -150,7 +178,7 @@ function AdminKegiatanContent() {
         location: '',
         type: 'Intel-WAS',
         image_url: '',
-        unit_id: user?.unit_slug || 'kanwil-sulbar',
+        unit_id: access.unit_slug || unitOptions[0]?.id || '',
         published: true,
       })
     }
@@ -161,7 +189,7 @@ function AdminKegiatanContent() {
     if (!formData.title.trim()) return 'Judu kegiatan wajib diisi'
     if (!formData.date) return 'Tanggal wajib diisi'
     if (!formData.unit_id) return 'Pilih unit kerja'
-    if (!canManageUnit(user, formData.unit_id)) {
+    if (!canManageUnit(access, formData.unit_id)) {
       return 'Anda tidak berhak mengelola unit ini'
     }
     return ''
@@ -172,8 +200,8 @@ function AdminKegiatanContent() {
       .from('kegiatan')
       .select('*')
       .order('date', { ascending: false })
-    if (user?.role !== 'superadmin' && user?.unit_slug) {
-      query = query.eq('unit_id', user.unit_slug)
+    if (access.role !== 'superadmin' && access.unit_slug) {
+      query = query.eq('unit_id', access.unit_slug)
     }
     const { data } = await query
     setKegiatan(data || [])
@@ -285,16 +313,21 @@ function AdminKegiatanContent() {
             </h1>
             <p className="text-text/70 mt-1">
               {kegiatan.length} kegiatan tercatat
+              {user
+                ? ` · ${roleLabel(access.role)}${access.unit_slug ? ' · ' + (UNIT_SLUG_MAP[access.unit_slug]?.label ?? access.unit_slug) : ''}`
+                : ''}
             </p>
           </div>
 
-          <button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary-dark text-white font-bold text-sm rounded-xl hover:bg-primary transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Tambah Kegiatan
-          </button>
+          {canManageAny && (
+            <button
+              onClick={() => openModal()}
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary-dark text-white font-bold text-sm rounded-xl hover:bg-primary transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Tambah Kegiatan
+            </button>
+          )}
         </div>
 
         {/* Kegiatan List */}
@@ -384,15 +417,28 @@ function AdminKegiatanContent() {
                       value={formData.unit_id}
                       onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
-                      disabled={user?.role !== 'superadmin'}
                     >
-                      {units
-                        .filter((u) => canManageLocalUnit(u.id))
-                        .map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.short_name}
-                          </option>
-                        ))}
+                      {access.role !== 'superadmin' ? (
+                        // Admin unit: hanya boleh unitnya sendiri
+                        <option value={access.unit_slug || ''}>
+                          {UNIT_SLUG_MAP[access.unit_slug || '']?.label ||
+                            access.unit_slug ||
+                            '— Pilih unit —'}
+                        </option>
+                      ) : (
+                        <>
+                          <option value="">— Pilih unit —</option>
+                          {unitOptions.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.label}
+                            </option>
+                          ))}
+                          {formData.unit_id &&
+                            !unitOptions.some((u) => u.id === formData.unit_id) && (
+                              <option value={formData.unit_id}>{formData.unit_id}</option>
+                            )}
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -510,6 +556,40 @@ function AdminKegiatanContent() {
         )}
 
         <ToastViewport toasts={toasts} onDismiss={dismiss} />
+
+        {user && !canManageAny && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 animate-pulse">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-amber-800 text-sm mb-1">
+                  Akses admin belum aktif — data hanya bisa dibaca
+                </h3>
+                <p className="text-amber-700 text-xs mb-2 leading-relaxed">
+                  Peran terdeteksi: <strong>{roleLabel(access.role)}</strong> ·
+                  unit <strong>{access.unit_slug ?? '—'}</strong>. Untuk mengaktifkan
+                  CRUD (tambah/edit/hapus) pada unit Anda, jalankan migration ini di
+                  Supabase SQL Editor, berurutan:
+                </p>
+                <div className="space-y-1 text-[11px]">
+                  <div className="bg-amber-100 px-2.5 py-1.5 rounded border-l-4 border-amber-500">
+                    1) <code>supabase/migrations/005_seed_admins.sql</code> — pendaftarkan profil email resmi
+                  </div>
+                  <div className="bg-amber-100 px-2.5 py-1.5 rounded border-l-4 border-amber-500">
+                    2) <code>supabase/migrations/006_complete_admin_crud_rls.sql</code> — izinkan admin unit tulis data unitnya sendiri
+                  </div>
+                  <div className="bg-amber-100 px-2.5 py-1.5 rounded border-l-4 border-amber-500">
+                    3) <code>supabase/migrations/007_profile_privilege_guard.sql</code> — mencegah peningkatan role sembarangan
+                  </div>
+                </div>
+                <p className="text-amber-600 text-[11px] mt-2">
+                  Setelah dijalankan, segarkan halaman ini. Jika email Anda cocok
+                  dengan salah satu resmi, peran akan disejajarkan otomatis.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <ConfirmDialog
           state={{

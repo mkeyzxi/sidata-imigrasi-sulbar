@@ -16,7 +16,13 @@ import {
   RefreshCw,
   Filter,
 } from 'lucide-react'
-import { canManageUnit as canManageUnitCheck, roleLabel, UNIT_SLUG_MAP } from '@/lib/utils/access'
+import {
+  canManageUnit as canManageUnitCheck,
+  roleLabel,
+  UNIT_SLUG_MAP,
+  effectiveAccess,
+  syncOfficialProfile,
+} from '@/lib/utils/access'
 import {
   useToasts,
   ToastViewport,
@@ -132,10 +138,20 @@ export default function AdminDataPage() {
         .select('*')
         .eq('id', session.user.id)
         .single()
-      setUser(profile as Profile | null)
+
+      // Samakan role/unit di DB dengan email resmi (self-heal) supaya
+      // RLS di database ikut mengizinkan CRUD — bukan hanya UI-nya.
+      let resolved = profile as Profile | null
+      if (resolved) {
+        const synced = await syncOfficialProfile(supabase, resolved)
+        if (synced) resolved = { ...resolved, ...synced }
+      }
+      setUser(resolved)
 
       const { data: unitsData } = await supabase.from('units').select('*')
       setUnits(unitsData || [])
+
+      const localAccess = effectiveAccess(resolved)
 
       let query = supabase
         .from('statistik_pendaftaran')
@@ -143,8 +159,8 @@ export default function AdminDataPage() {
         .order('tahun', { ascending: false })
         .order('kategori', { ascending: true })
 
-      if (profile && profile.role !== 'superadmin' && profile.unit_slug) {
-        query = query.eq('unit_id', profile.unit_slug)
+      if (localAccess.role !== 'superadmin' && localAccess.unit_slug) {
+        query = query.eq('unit_id', localAccess.unit_slug)
       }
 
       const { data: statData } = await query
@@ -154,7 +170,19 @@ export default function AdminDataPage() {
     loadData()
   }, [supabase, router])
 
-  const canManageLocalUnit = (unitId: string) => canManageUnitCheck(user, unitId)
+  // Peran efektif: email resmi jadi sumber kebenaran bila role di DB belum terset
+  const access = useMemo(() => effectiveAccess(user), [user])
+
+  // Tombol aksi hanya untuk superadmin & admin unit
+  const canManageAny = access.role === 'superadmin' || access.role.startsWith('admin')
+
+  // Pilihan unit untuk dropdown (fallback ke daftar statis bila tabel kosong)
+  const unitOptions = useMemo(() => {
+    if (units.length > 0) return units.map((u) => ({ id: u.id, label: u.short_name || u.id }))
+    return Object.entries(UNIT_SLUG_MAP).map(([id, v]) => ({ id, label: v.label }))
+  }, [units])
+
+  const canManageLocalUnit = (unitId: string) => canManageUnitCheck(access, unitId)
 
   const filteredStatistik = useMemo(() => {
     let data = statistik
@@ -210,7 +238,8 @@ export default function AdminDataPage() {
     } else {
       setEditing(null)
       setFormData({
-        unit_id: user?.unit_slug || 'kanwil-sulbar',
+        unit_id:
+          access.unit_slug || unitOptions[0]?.id || Object.keys(UNIT_SLUG_MAP)[0] || '',
         kategori: '',
         sub_kategori: '',
         label: '',
@@ -243,8 +272,8 @@ export default function AdminDataPage() {
       .select('*')
       .order('tahun', { ascending: false })
       .order('kategori', { ascending: true })
-    if (user?.role !== 'superadmin' && user?.unit_slug) {
-      query = query.eq('unit_id', user.unit_slug)
+    if (access.role !== 'superadmin' && access.unit_slug) {
+      query = query.eq('unit_id', access.unit_slug)
     }
     const { data } = await query
     setStatistik(data || [])
@@ -365,6 +394,40 @@ export default function AdminDataPage() {
       <div className="max-w-5xl mx-auto">
         <ToastViewport toasts={toasts} onDismiss={dismiss} />
 
+        {user && !canManageAny && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 animate-pulse">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-amber-800 text-sm mb-1">
+                  Akses admin belum aktif — data hanya bisa dibaca
+                </h3>
+                <p className="text-amber-700 text-xs mb-2 leading-relaxed">
+                  Peran terdeteksi: <strong>{roleLabel(access.role)}</strong> ·
+                  unit <strong>{access.unit_slug ?? '—'}</strong>. Untuk mengaktifkan
+                  CRUD (tambah/edit/hapus) pada unit Anda, jalankan migration ini di
+                  Supabase SQL Editor, berurutan:
+                </p>
+                <div className="space-y-1 text-[11px]">
+                  <div className="bg-amber-100 px-2.5 py-1.5 rounded border-l-4 border-amber-500">
+                    1) <code>supabase/migrations/005_seed_admins.sql</code> — pendaftarkan profil email resmi
+                  </div>
+                  <div className="bg-amber-100 px-2.5 py-1.5 rounded border-l-4 border-amber-500">
+                    2) <code>supabase/migrations/006_complete_admin_crud_rls.sql</code> — izinkan admin unit tulis data unitnya sendiri
+                  </div>
+                  <div className="bg-amber-100 px-2.5 py-1.5 rounded border-l-4 border-amber-500">
+                    3) <code>supabase/migrations/007_profile_privilege_guard.sql</code> — mencegah peningkatan role sembarangan
+                  </div>
+                </div>
+                <p className="text-amber-600 text-[11px] mt-2">
+                  Setelah dijalankan, segarkan halaman ini. Jika email Anda cocok
+                  dengan salah satu resmi, peran akan disejajarkan otomatis.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6">
           <Link
             href="/admin"
@@ -382,7 +445,7 @@ export default function AdminDataPage() {
             </h1>
             <p className="text-text/70 mt-1">
               {user
-                ? `${roleLabel(user.role)}${user.unit_slug ? ' · ' + UNIT_SLUG_MAP[user.unit_slug]?.label : ''}`
+                ? `${roleLabel(access.role)}${access.unit_slug ? ' · ' + (UNIT_SLUG_MAP[access.unit_slug]?.label ?? access.unit_slug) : ''}`
                 : ''}
             </p>
           </div>
@@ -394,13 +457,15 @@ export default function AdminDataPage() {
             >
               <RefreshCw className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => openModal()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary-dark text-white font-bold text-sm rounded-xl hover:bg-primary transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Tambah Data
-            </button>
+            {canManageAny && (
+              <button
+                onClick={() => openModal()}
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary-dark text-white font-bold text-sm rounded-xl hover:bg-primary transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Tambah Data
+              </button>
+            )}
           </div>
         </div>
 
@@ -429,9 +494,9 @@ export default function AdminDataPage() {
               className="px-4 py-2.5 bg-background rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
             >
               <option value="all">Semua Unit</option>
-              {units.map((u) => (
+              {unitOptions.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.short_name}
+                  {u.label}
                 </option>
               ))}
             </select>
@@ -580,20 +645,34 @@ export default function AdminDataPage() {
                       value={formData.unit_id}
                       onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
-                      disabled={user?.role !== 'superadmin'}
                     >
-                      {user?.role !== 'superadmin' ? (
-                        <option value={user?.unit_slug || ''}>
-                          {UNIT_SLUG_MAP[user?.unit_slug || '']?.label || user?.unit_slug}
+                      {access.role !== 'superadmin' ? (
+                        // Admin unit: hanya boleh unitnya sendiri
+                        <option value={access.unit_slug || ''}>
+                          {UNIT_SLUG_MAP[access.unit_slug || '']?.label ||
+                            access.unit_slug ||
+                            '— Pilih unit —'}
                         </option>
                       ) : (
-                        units.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.short_name}
-                          </option>
-                        ))
+                        <>
+                          <option value="">— Pilih unit —</option>
+                          {unitOptions.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.label}
+                            </option>
+                          ))}
+                          {formData.unit_id &&
+                            !unitOptions.some((u) => u.id === formData.unit_id) && (
+                              <option value={formData.unit_id}>{formData.unit_id}</option>
+                            )}
+                        </>
                       )}
                     </select>
+                    {access.role !== 'superadmin' && (
+                      <p className="mt-1 text-[11px] text-text/50">
+                        Anda mengelola data milik unit Anda sendiri.
+                      </p>
+                    )}
                   </div>
 
                   <div>

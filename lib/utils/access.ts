@@ -48,6 +48,94 @@ export function roleFromEmail(email: string) {
   return match
 }
 
+/** Role admin unit -> unit bawaannya. */
+export function unitFromRole(role: string | null | undefined): string | null {
+  switch (role) {
+    case 'admin_kanwil':
+      return 'kanwil-sulbar'
+    case 'admin_mamuju':
+      return 'imigrasi-mamuju'
+    case 'admin_polman':
+      return 'imigrasi-polman'
+    default:
+      return null
+  }
+}
+
+/**
+ * Peran EFEKTIF untuk UI & query.
+ *
+ * Email resmi adalah sumber kebenaran: jika profil di database masih
+ * `viewer` (atau unit-nya kosong) padahal emailnya resmi, kita pakai
+ * pemetaan email agar UI tidak salah menampilkan "Hanya baca" /
+ * dropdown unit kosong. Tetap saja RLS di database yang menentukan
+ * apakah tulisannya benar-benar diperbolehkan — untuk itu pakai
+ * syncOfficialProfile() di bawah.
+ */
+export function effectiveAccess(profile: {
+  email?: string | null
+  role?: string | null
+  unit_slug?: string | null
+} | null | undefined): { role: string; unit_slug: string | null; label: string; fromEmail: boolean } {
+  const email = profile?.email?.toLowerCase().trim()
+  const mapped = email ? ROLE_EMAIL_MAP[email] : undefined
+  if (mapped) {
+    return {
+      role: mapped.role,
+      unit_slug: mapped.unit_slug ?? unitFromRole(mapped.role),
+      label: mapped.label,
+      fromEmail: true,
+    }
+  }
+  const role = profile?.role ?? 'viewer'
+  const unit_slug = profile?.unit_slug ?? unitFromRole(role)
+  return { role, unit_slug, label: roleLabel(role), fromEmail: false }
+}
+
+type SyncClient = {
+  from(table: 'profiles'): {
+    update(values: Record<string, unknown>): {
+      eq(column: string, value: string): {
+        select(columns: string): { single(): PromiseLike<{ data: { id: string; email: string | null; role: string; unit_slug: string | null } | null }> }
+      }
+    }
+  }
+}
+
+/**
+ * Penyelarasan profil dengan email resmi (self-heal).
+ *
+ * Jika akun resmi (admin.kanwil/mamuju/polman/superadmin) tapi role/unit
+ * di tabel profiles belum diset (mis. belum menjalankan migration 005),
+ * perbaiki otomatis — RLS mengizinkan user memperbarui profilnya sendiri.
+ * Mengembalikan profil terbaru bila ada perubahan, atau null bila tidak.
+ */
+export async function syncOfficialProfile(
+  client: SyncClient,
+  profile: { id: string; email?: string | null; role?: string | null; unit_slug?: string | null },
+): Promise<{ id: string; email: string | null; role: string; unit_slug: string | null } | null> {
+  const email = profile.email?.toLowerCase().trim()
+  const mapped = email ? ROLE_EMAIL_MAP[email] : undefined
+  if (!mapped) return null
+  if (profile.role === mapped.role && profile.unit_slug === mapped.unit_slug) return null
+
+  try {
+    const { data } = await client
+      .from('profiles')
+      .update({
+        role: mapped.role,
+        unit_slug: mapped.unit_slug,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', profile.id)
+      .select('id, email, role, unit_slug')
+      .single()
+    return data ?? null
+  } catch {
+    return null
+  }
+}
+
 /** Apakah profil bisa mengelola (tambah/edit/hapus) unit tertentu? */
 export function canManageUnit(
   profile: { role?: string; unit_slug?: string | null } | null | undefined,
