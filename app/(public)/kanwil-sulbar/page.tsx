@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ArrowRight, Building2, Calendar, FileText, Network, Activity } from 'lucide-react'
-import { kanwilBidang, kanwilKegiatan, kanwilSerapanBidang } from '@/lib/data/kanwil'
+import {ArrowLeft, ArrowRight, Building2, Calendar, FileText, Network, Activity} from 'lucide-react'
+import {kanwilBidang, kanwilKegiatan, kanwilSerapanBidang} from '@/lib/data/kanwil'
 import ActivityCard from '@/components/activities/ActivityCard'
-import { formatCurrency } from '@/lib/utils/format'
+import {formatCurrency} from '@/lib/utils/format'
 
 export default function KanwilSulbarPage() {
   const totalKegiatan = kanwilKegiatan.length
@@ -60,8 +60,8 @@ export default function KanwilSulbarPage() {
 
       {/* Executive Stats Data - Floating Cards Grid */}
       <section className="max-w-7xl mx-auto px-6 mb-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 text-text/50 mb-3">
               <Building2 className="w-4 h-4 text-accent" />
               <span className="text-sm font-bold uppercase tracking-widest">Total Bidang</span>
@@ -69,7 +69,7 @@ export default function KanwilSulbarPage() {
             <div className="text-4xl font-black text-primary-dark tracking-tight">
               {String(totalBidang).padStart(2, '0')}
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 text-text/50 mb-3">
