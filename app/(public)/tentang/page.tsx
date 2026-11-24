@@ -6,7 +6,7 @@ export default function TentangPage() {
   return (
     <main className="min-h-screen bg-background text-text pb-28 selection:bg-accent selection:text-white">
       {/* Contextual Back Navigation */}
-      <nav className="max-w-4xl mx-auto px-6 pt-8 mb-8">
+      <nav className="max-w-7xl mx-auto px-6 pt-8 mb-8">
         <Link
           href="/"
           className="inline-flex items-center text-sm font-bold text-text/60 hover:text-primary-dark transition-colors tracking-wider uppercase group"
@@ -16,7 +16,7 @@ export default function TentangPage() {
         </Link>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Header Section - Clean & Editorial */}
         <header className="mb-16">
           <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-accent/10 text-accent font-semibold text-sm tracking-wider uppercase mb-6">
@@ -44,7 +44,7 @@ export default function TentangPage() {
                 Visi & Misi
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-heading tracking-tight flex items-center gap-2.5">
-                <Target className="w-5 h-5 text-accent shrink-0" />
+                {/* <Target className="w-5 h-5 text-accent shrink-0" /> */}
                 Tujuan Sistem
               </h2>
             </div>
@@ -70,7 +70,7 @@ export default function TentangPage() {
                 Jangkauan Data
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-heading tracking-tight flex items-center gap-2.5">
-                <Layers className="w-5 h-5 text-accent shrink-0" />
+                {/* <Layers className="w-5 h-5 text-accent shrink-0" /> */}
                 Cakupan Unit
               </h2>
             </div>
@@ -107,7 +107,7 @@ export default function TentangPage() {
                 Otorisasi & Akses
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-heading tracking-tight flex items-center gap-2.5">
-                <Users className="w-5 h-5 text-accent shrink-0" />
+                {/* <Users className="w-5 h-5 text-accent shrink-0" /> */}
                 Pengguna
               </h2>
             </div>

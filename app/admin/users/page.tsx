@@ -2,17 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import {
   ArrowLeft,
-  Users,
   Plus,
-  Shield,
   Trash2,
   Loader2,
-  Eye,
-  EyeOff,
+  AlertCircle,
 } from 'lucide-react'
+import { roleFromEmail, roleLabel, roleColor, UNIT_SLUG_MAP } from '@/lib/utils/access'
+import {
+  useToasts,
+  ToastViewport,
+  useConfirmDialog,
+  ConfirmDialog,
+} from '@/components/admin/feedback'
 
 type Profile = {
   id: string
@@ -27,11 +32,17 @@ type Profile = {
 }
 
 export default function AdminUsersPage() {
+  const router = useRouter()
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [user, setUser] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [deactivating, setDeactivating] = useState(false)
+  const [pendingDeactivate, setPendingDeactivate] = useState<Profile | null>(null)
+  const [supabase] = useState<ReturnType<typeof createSupabaseBrowserClient>>(() =>
+    createSupabaseBrowserClient(),
+  )
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
@@ -39,100 +50,159 @@ export default function AdminUsersPage() {
     unit_slug: '',
   })
 
-  useEffect(() => {
-    const client = createSupabaseBrowserClient()
-    setSupabase(client)
+  const { toasts, push, dismiss } = useToasts()
+  const confirm = useConfirmDialog()
 
+  useEffect(() => {
     const loadData = async () => {
-      const { data: { session } } = await client.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        window.location.href = '/login'
+        router.replace('/login')
         return
       }
 
-      const { data: profile } = await client
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single()
-      setUser(profile as Profile | null)
 
+      // Hanya superadmin yang boleh berada di halaman ini
       if (profile?.role !== 'superadmin') {
-        window.location.href = '/admin'
+        router.replace('/admin')
         return
       }
 
-      const { data: allProfiles } = await client.from('profiles').select('*')
+      const { data: allProfiles } = await supabase.from('profiles').select('*')
       setProfiles(allProfiles || [])
       setLoading(false)
     }
     loadData()
-  }, [])
+  }, [router, supabase])
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'superadmin': return 'Super Admin'
-      case 'admin_kanwil': return 'Admin Kanwil'
-      case 'admin_mamuju': return 'Admin Mamuju'
-      case 'admin_polman': return 'Admin Polman'
-      default: return 'Viewer'
-    }
+  const getRoleLabel = (role: string) => roleLabel(role)
+
+  const getRoleColor = (role: string) => roleColor(role)
+
+  /** Jika email resmi, isi role & unit_slug otomatis. */
+  const handleEmailChange = (value: string) => {
+    const match = roleFromEmail(value)
+    setFormData((prev) => ({
+      ...prev,
+      email: value,
+      role: match.role,
+      unit_slug: match.unit_slug ?? (prev.role && prev.role.startsWith('admin') ? prev.unit_slug : ''),
+    }))
   }
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'superadmin': return 'bg-accent/10 text-accent'
-      case 'admin_kanwil': return 'bg-blue-100 text-blue-700'
-      case 'admin_mamuju': return 'bg-green-100 text-green-700'
-      case 'admin_polman': return 'bg-purple-100 text-purple-700'
-      default: return 'bg-gray-100 text-gray-600'
+  const defaultPassword = (email: string) => email.split('@')[0] + '@2026'
+
+  const validateForm = (): string => {
+    const email = formData.email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Format email tidak valid'
+    if (!formData.full_name.trim()) return 'Nama lengkap wajib diisi'
+    if (formData.role.startsWith('admin') && !formData.unit_slug) {
+      return 'Pilih unit kerja untuk peran admin unit'
     }
+    if (profiles.some((p) => p.email?.toLowerCase() === email)) {
+      return 'Email sudah terdaftar'
+    }
+    return ''
   }
 
   const handleCreateUser = async () => {
-    if (!supabase) return
+    const invalid = validateForm()
+    if (invalid) {
+      setCreateError(invalid)
+      return
+    }
+    setCreating(true)
+    setCreateError('')
+
     try {
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.email.split('@')[0] + '@2026',
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.full_name,
+      const { data: { session } } = await supabase!.auth.getSession()
+      if (!session) throw new Error('Sesi berakhir, silakan masuk ulang.')
+
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
+        body: JSON.stringify({
+          email: formData.email.trim().toLowerCase(),
+          full_name: formData.full_name.trim(),
+          role: formData.role,
+          unit_slug: formData.unit_slug,
+        }),
       })
 
-      if (error) throw error
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Gagal membuat pengguna.')
 
-      // Update the profile
-      await supabase.from('profiles').update({
-        role: formData.role,
-        unit_slug: formData.unit_slug || null,
-      }).eq('id', data.user!.id)
-
-      // Refresh list
-      const { data: allProfiles } = await supabase.from('profiles').select('*')
+      const { data: allProfiles } = await supabase!.from('profiles').select('*')
       setProfiles(allProfiles || [])
       setShowModal(false)
-    } catch (error: any) {
-      alert('Error: ' + error.message)
+      setFormData({ email: '', full_name: '', role: 'viewer', unit_slug: '' })
+      push(
+        'success',
+        `Pengguna dibuat. Password: ${json.password ?? defaultPassword(formData.email)}`,
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan.'
+      setCreateError(message)
+      push('error', message)
+    } finally {
+      setCreating(false)
     }
   }
 
-  const handleDeleteProfile = async (id: string) => {
-    if (!supabase) return
-    if (!confirm('Hapus user ini dari sistem?')) return
+  const askDeactivate = (p: Profile) => {
+    setPendingDeactivate(p)
+    confirm.openDialog({
+      title: 'Nonaktifkan pengguna?',
+      description: `${p.full_name || p.email} tidak akan bisa masuk sampai diaktifkan kembali.`,
+      confirmLabel: 'Ya, Nonaktifkan',
+      danger: true,
+    })
+  }
 
-    // Deactivate instead of delete (safer)
-    await supabase.from('profiles').update({ is_active: false }).eq('id', id)
-    setProfiles(profiles.filter((p) => p.id !== id))
+  const handleDeactivate = async () => {
+    if (!supabase || !pendingDeactivate) return
+    setDeactivating(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', pendingDeactivate.id)
+    setDeactivating(false)
+    confirm.closeDialog()
+
+    if (error) {
+      push('error', 'Gagal menonaktifkan: ' + error.message)
+      setPendingDeactivate(null)
+      return
+    }
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === pendingDeactivate.id ? { ...p, is_active: false } : p)),
+    )
+    push('success', 'Pengguna dinonaktifkan')
+    setPendingDeactivate(null)
   }
 
   const toggleActive = async (profile: Profile) => {
     if (!supabase) return
-    await supabase.from('profiles').update({ is_active: !profile.is_active }).eq('id', profile.id)
-    setProfiles(profiles.map((p) =>
-      p.id === profile.id ? { ...p, is_active: !p.is_active } : p
-    ))
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_active: !profile.is_active, updated_at: new Date().toISOString() })
+      .eq('id', profile.id)
+    if (error) {
+      push('error', 'Gagal mengubah status: ' + error.message)
+      return
+    }
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === profile.id ? { ...p, is_active: !p.is_active } : p)),
+    )
+    push('success', profile.is_active ? 'Pengguna dinonaktifkan' : 'Pengguna diaktifkan')
   }
 
   if (loading) {
@@ -149,6 +219,7 @@ export default function AdminUsersPage() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-background py-12 px-6">
       <div className="max-w-5xl mx-auto">
+        <ToastViewport toasts={toasts} onDismiss={dismiss} />
 
         <div className="mb-10">
           <Link
@@ -166,12 +237,15 @@ export default function AdminUsersPage() {
               Manajemen Pengguna
             </h1>
             <p className="text-text/70 mt-1">
-              {profiles.length} pengguna terdaftar
+              {profiles.length} pengguna terdaftar · hanya superadmin yang mengakses halaman ini
             </p>
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setCreateError('')
+              setShowModal(true)
+            }}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary-dark text-white font-bold text-sm rounded-xl hover:bg-primary transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -206,7 +280,7 @@ export default function AdminUsersPage() {
                 {profiles.map((p) => (
                   <tr key={p.id} className="border-b border-border last:border-0">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-heading">{p.full_name}</div>
+                      <div className="font-bold text-heading">{p.full_name || '—'}</div>
                       <div className="text-text/50 text-xs">{p.email}</div>
                     </td>
                     <td className="px-6 py-4">
@@ -215,7 +289,9 @@ export default function AdminUsersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-text/60">
-                      {p.unit_slug || '—'}
+                      {p.unit_slug
+                        ? UNIT_SLUG_MAP[p.unit_slug]?.label ?? p.unit_slug
+                        : '—'}
                     </td>
                     <td className="px-6 py-4">
                       <button
@@ -231,8 +307,10 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleDeleteProfile(p.id)}
-                        className="p-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                        onClick={() => askDeactivate(p)}
+                        disabled={!p.is_active}
+                        className="p-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={p.is_active ? 'Nonaktifkan pengguna' : 'Sudah nonaktif'}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -244,6 +322,11 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
+        <p className="mt-3 text-xs text-text/50">
+          Catatan: menghapus pengguna dilakukan dengan menonaktifkan akun agar riwayat
+          datanya tetap utuh. Klik status &quot;Aktif&quot; untuk mengaktifkan kembali.
+        </p>
+
         {/* Create User Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -253,6 +336,13 @@ export default function AdminUsersPage() {
                   Tambah Pengguna Baru
                 </h2>
 
+                {createError && (
+                  <div className="mb-4 px-3 py-2.5 bg-red-50 text-red-700 text-sm rounded-xl flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{createError}</span>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-heading mb-1.5">
@@ -261,10 +351,13 @@ export default function AdminUsersPage() {
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => handleEmailChange(e.target.value)}
                       className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       placeholder="nama@sidata-imigrasi-sulbar.go.id"
                     />
+                    <p className="mt-1 text-[11px] text-text/50">
+                      Email resmi otomatis menyetel peran &amp; unit yang sesuai.
+                    </p>
                   </div>
 
                   <div>
@@ -297,7 +390,7 @@ export default function AdminUsersPage() {
                     </select>
                   </div>
 
-                  {formData.role !== 'viewer' && formData.role !== 'superadmin' && (
+                  {formData.role.startsWith('admin') && (
                     <div>
                       <label className="block text-sm font-semibold text-heading mb-1.5">
                         Unit Kerja
@@ -307,32 +400,59 @@ export default function AdminUsersPage() {
                         onChange={(e) => setFormData({ ...formData, unit_slug: e.target.value })}
                         className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       >
+                        <option value="">— Pilih unit —</option>
                         <option value="kanwil-sulbar">Kanwil Sulbar</option>
                         <option value="imigrasi-mamuju">Imigrasi Mamuju</option>
                         <option value="imigrasi-polman">Imigrasi Polman</option>
                       </select>
                     </div>
                   )}
+
+                  <div className="bg-background rounded-xl p-3 text-xs text-text/60">
+                    Password otomatis:{' '}
+                    <span className="font-bold text-heading">
+                      {formData.email
+                        ? defaultPassword(formData.email.trim().toLowerCase())
+                        : '<bagian-email>@2026'}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="flex-1 py-2.5 bg-background text-heading font-bold rounded-xl hover:bg-muted transition-colors"
+                    disabled={creating}
+                    className="flex-1 py-2.5 bg-background text-heading font-bold rounded-xl hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     Batal
                   </button>
                   <button
                     onClick={handleCreateUser}
-                    className="flex-1 py-2.5 bg-primary-dark text-white font-bold rounded-xl hover:bg-primary transition-colors"
+                    disabled={creating}
+                    className="flex-1 py-2.5 bg-primary-dark text-white font-bold rounded-xl hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    Buat User
+                    {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {creating ? 'Membuat...' : 'Buat User'}
                   </button>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          state={{
+            ...confirm.state,
+            loading: deactivating,
+            confirmLabel: 'Ya, Nonaktifkan',
+            danger: true,
+          }}
+          onConfirm={handleDeactivate}
+          onCancel={() => {
+            confirm.closeDialog()
+            setPendingDeactivate(null)
+          }}
+        />
       </div>
     </main>
   )
