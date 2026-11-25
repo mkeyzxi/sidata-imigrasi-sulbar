@@ -27,10 +27,6 @@ export default function Navbar() {
     pathname.startsWith(p),
   )
 
-  if (pathname === '/') {
-    return null
-  }
-
   // Kelas bersama untuk link menu (desktop & mobile)
   const linkClass = (active: boolean) =>
     `relative transition-all duration-300 ${
