@@ -98,17 +98,17 @@ export default function KegiatanPage() {
       </header>
 
       {/* Control Panel: Floating Filter & Search */}
-      <section className="sticky top-6 z-30 max-w-7xl mx-auto px-6 mb-10">
-        <div className="bg-surface/90 backdrop-blur-md shadow-sm rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* Unit Filters */}
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
-            <Filter className="w-4 h-4 text-accent mr-1 shrink-0" />
-            <div className="flex gap-2">
+      <section className="max-w-7xl mx-auto px-6 mb-10">
+        <div className="bg-surface/90 backdrop-blur-md shadow-sm rounded-2xl p-4 sm:p-5 md:p-5 space-y-4">
+          {/* Unit Filters — scroll horizontal di mobile */}
+          <div className="flex items-center gap-2.5 overflow-x-auto hide-scrollbar">
+            <Filter className="w-4 h-4 text-accent shrink-0" />
+            <div className="flex items-center gap-2">
               {UNIT_FILTERS.map((unit) => (
                 <button
                   key={unit.id}
                   onClick={() => setFilterUnit(unit.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                     filterUnit === unit.id
                       ? 'bg-primary-dark text-white shadow-sm'
                       : 'bg-background text-text/70 hover:bg-muted/50 hover:text-heading'
@@ -121,8 +121,8 @@ export default function KegiatanPage() {
           </div>
 
           {/* Search Input */}
-          <div className="relative w-full md:max-w-xs shrink-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40" />
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 pointer-events-none" />
             <input
               type="text"
               placeholder="Cari nama kegiatan..."

@@ -25,6 +25,25 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
+
+  /* Clickable card idle animation */
+  --animate-card-breathe: card-breathe 2.8s ease-in-out infinite;
+
+  @keyframes card-breathe {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 0 rgba(244, 197, 66, 0),
+        0 4px 14px rgba(8, 43, 95, 0.08);
+      transform: translateY(0);
+    }
+    50% {
+      box-shadow:
+        0 0 0 4px rgba(244, 197, 66, 0.22),
+        0 10px 28px rgba(8, 43, 95, 0.18);
+      transform: translateY(-4px);
+    }
+  }
 }
 
 @layer base {
@@ -37,5 +56,13 @@
     color: var(--color-text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -32,7 +32,7 @@ export default async function BidangDetailPage({ params }: PageProps) {
           Kembali ke Kanwil Sulbar
         </Link>
 
-        <div className="flex items-center gap-2 text-sm font-semibold tracking-wider uppercase text-text/40">
+        {/* <div className="flex items-center gap-2 text-sm font-semibold tracking-wider uppercase text-text/40">
           <Link href="/" className="hover:text-primary transition-colors">
             Beranda
           </Link>
@@ -42,7 +42,7 @@ export default async function BidangDetailPage({ params }: PageProps) {
           </Link>
           <ChevronRight className="w-3 h-3 text-text/30" />
           <span className="text-primary-dark font-bold">{bidang.name}</span>
-        </div>
+        </div> */}
       </nav>
 
       {/* Header - Editorial Style */}

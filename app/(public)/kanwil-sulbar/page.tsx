@@ -79,7 +79,7 @@ export default async function KanwilSulbarPage() {
           <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 text-text/50 mb-3">
               <Calendar className="w-4 h-4 text-accent" />
-              <span className="text-sm font-bold uppercase tracking-widest">Giat Tercatat</span>
+              <span className="text-sm font-bold uppercase tracking-widest">Total Kegiatan</span>
             </div>
             <div className="text-4xl font-black text-primary-dark tracking-tight">
               {String(totalKegiatan).padStart(2, '0')}
@@ -90,7 +90,7 @@ export default async function KanwilSulbarPage() {
             <div className="flex items-center gap-2 text-text/50 mb-3">
               <FileText className="w-4 h-4 text-accent" />
               <span className="text-sm font-bold uppercase tracking-widest">
-                Serapan (Bidang 1)
+                TOTAL SERAPAN KANTOR WILAYAH
               </span>
             </div>
             <div className="text-3xl font-black text-primary-dark tracking-tight">
@@ -120,22 +120,24 @@ export default async function KanwilSulbarPage() {
             <Link
               key={bidang.id}
               href={`/kanwil-sulbar/${bidang.slug}`}
-              className="group flex flex-col md:flex-row md:items-center justify-between p-6 sm:p-7 bg-surface rounded-2xl shadow-sm hover:shadow-md transition-all duration-300"
+              className="group flex flex-col md:flex-row md:items-center justify-between p-6 sm:p-7 bg-surface rounded-2xl shadow-sm hover:shadow-xl hover:shadow-primary-dark/15 transition-all duration-300 cursor-pointer focus-visible:ring-4 focus-visible:ring-accent/60 focus-visible:ring-offset-2 outline-none hover:bg-primary-dark hover:-translate-y-0.5"
             >
               <div className="flex items-start md:items-center gap-6">
                 <span className="font-black text-accent text-lg md:text-xl transition-transform duration-300 group-hover:scale-110">
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <div>
-                  <h3 className="text-lg font-bold text-heading group-hover:text-primary-dark transition-colors">
+                  <h3 className="text-lg font-bold text-heading group-hover:text-accent transition-colors">
                     {bidang.name}
                   </h3>
-                  <p className="text-base text-text/70 mt-1 max-w-2xl">{bidang.description}</p>
+                  <p className="text-base text-text/70 group-hover:text-white/90 mt-1 max-w-2xl transition-colors">
+                    {bidang.description}
+                  </p>
                 </div>
               </div>
 
-              <div className="mt-4 md:mt-0 flex items-center text-sm font-bold uppercase tracking-wider text-accent md:opacity-0 md:-translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                Lihat Detail <ArrowRight className="w-4 h-4 ml-1.5" />
+              <div className="mt-4 md:mt-0 flex items-center text-sm font-bold uppercase tracking-wider text-accent md:opacity-0 md:-translate-x-3 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 group-hover:text-white">
+                Lihat Detail <ArrowRight className="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1" />
               </div>
             </Link>
           ))}
