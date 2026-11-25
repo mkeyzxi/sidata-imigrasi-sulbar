@@ -159,9 +159,9 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
               <p className="text-white/70 text-sm mb-6 leading-relaxed">
                 Hubungi layanan informasi resmi Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat untuk pertanyaan lebih lanjut.
               </p>
-              <button className="w-full py-3 bg-accent hover:bg-accent/90 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-colors">
+              <Link href="/hubungi"><button className="w-full py-3 bg-accent hover:bg-accent/90 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-colors">
                 Kontak Kami
-              </button>
+              </button></Link>
             </div>
           </aside>
         </div>
