@@ -52,13 +52,13 @@ export default async function DataPage() {
           Kembali ke Halaman Utama
         </Link>
 
-        <div className="flex items-center gap-2 text-sm font-bold tracking-wider uppercase text-text/50">
+        {/* <div className="flex items-center gap-2 text-sm font-bold tracking-wider uppercase text-text/50">
           <Link href="/" className="hover:text-primary-dark transition-colors">
             Beranda
           </Link>
           <ChevronRight className="w-3 h-3 text-accent" />
           <span className="text-primary-dark">Pusat Data</span>
-        </div>
+        </div> */}
       </nav>
 
       {/* Header Section */}
@@ -92,8 +92,8 @@ export default async function DataPage() {
               </div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl font-black text-primary-dark tracking-tight">03</div>
-              <span className="text-sm font-medium text-text/60 mt-1 block">Kanwil, Kanim Mamuju, Kanim Polman</span>
+              <div className="text-3xl sm:text-4xl font-black text-primary-dark tracking-tight">02</div>
+              <span className="text-sm font-medium text-text/60 mt-1 block">Kanim Mamuju, Kanim Polman</span>
             </div>
           </div>
 

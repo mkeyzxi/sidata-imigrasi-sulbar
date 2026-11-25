@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
-import {useState} from 'react'
+import {useState, useRef, useEffect} from 'react'
 
 import Image from 'next/image'
 
@@ -20,6 +20,25 @@ export default function Navbar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
 
+  // Hide on scroll down, show on scroll up
+  const [hidden, setHidden] = useState(false)
+  const lastScrollY = useRef(0)
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY
+      if (isOpen) {
+        // Jangan sembunyikan saat menu mobile terbuka
+        lastScrollY.current = y
+        return
+      }
+      setHidden(y > lastScrollY.current && y > 80)
+      lastScrollY.current = y
+    }
+    window.addEventListener('scroll', onScroll, {passive: true})
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [isOpen])
+
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href)
 
@@ -36,7 +55,11 @@ export default function Navbar() {
     }`
 
   return (
-    <nav className="bg-white border-b border-[var(--color-border)] sticky top-0 z-50">
+    <nav
+      className={`bg-white border-b border-[var(--color-border)] sticky top-0 z-50 transition-transform duration-300 ${
+        hidden ? '-translate-y-full' : 'translate-y-0'
+      }`}
+    >
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10">
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-3">

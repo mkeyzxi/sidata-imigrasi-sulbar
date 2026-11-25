@@ -31,12 +31,12 @@ const units = [
 
 export default function Home() {
   return (
-    <main className="w-full h-[90dvh] max-h-[100dvh] overflow-hidden bg-background text-text flex items-center justify-center p-6 md:p-10 lg:p-12 selection:bg-accent selection:text-white">
-      <div className="w-full max-w-[1600px] h-full min-w-0 min-h-0 flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch justify-between">
+    <main className="w-full min-h-[90dvh] lg:h-[90dvh] lg:max-h-[100dvh] lg:overflow-hidden bg-background text-text flex flex-col lg:items-center justify-start lg:justify-center p-6 lg:p-10 lg:lg:p-12 selection:bg-accent selection:text-white">
+      <div className="w-full max-w-[1600px] h-full min-h-0 flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch justify-between">
         {/* LEFT PANEL */}
         <div className="w-full lg:w-5/12 min-w-0 flex flex-col justify-between py-2 lg:py-6 z-10 shrink-0">
           {/* TITLE & DESCRIPTION */}
-          <div className="my-auto py-6">
+          <div className="my-auto py-4 lg:py-6">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-primary-dark tracking-tight leading-[1.08] mb-6">
               SI DATA <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-dark via-primary to-accent">
@@ -61,7 +61,7 @@ export default function Home() {
         </div>
 
         {/* RIGHT PANEL */}
-        <div className="w-full lg:w-7/12 min-w-0 h-full min-h-0 flex flex-col sm:flex-row gap-4 sm:gap-5 overflow-hidden py-2">
+        <div className="w-full lg:w-7/12 min-w-0 min-h-0 flex flex-col sm:flex-row lg:flex-row gap-4 sm:gap-5 overflow-visible lg:overflow-hidden py-2">
           {units.map((unit) => (
             <Link
               key={unit.id}
@@ -72,6 +72,8 @@ export default function Home() {
                 flex-1
                 min-w-0
                 min-h-0
+                min-h-[280px]
+                sm:min-h-0
                 flex
                 flex-col
                 justify-end
@@ -85,6 +87,13 @@ export default function Home() {
                 shadow-sm
                 hover:shadow-2xl
                 hover:-translate-y-1
+                cursor-pointer
+                outline-none
+                focus-visible:ring-4
+                focus-visible:ring-accent/60
+                focus-visible:ring-offset-2
+                animate-card-breathe
+                hover:animate-none
               "
             >
               {/* BACKGROUND IMAGE */}
@@ -112,12 +121,13 @@ export default function Home() {
                   inset-0
                   bg-gradient-to-t
                   from-black/90
-                  via-black/40
-                  to-black/10
-                  opacity-80
-                  group-hover:opacity-75
+                  via-black/50
+                  to-black/20
+                  opacity-90
+                  group-hover:opacity-80
                   transition-opacity
                   duration-500
+                  
                 "
                 />
               </div>
@@ -152,24 +162,51 @@ export default function Home() {
                   {unit.id} • {unit.code}
                 </span>
 
-                <div
+                {/* <div
                   className="
                   w-9
                   h-9
                   rounded-full
-                  bg-white/10
+                  bg-white/20
                   backdrop-blur-md
-                  flex
+                 flex
+                 
+                 
                   items-center
                   justify-center
                   text-white
-                  opacity-0
+                  opacity-40
                   group-hover:opacity-100
                   transition-all
                   duration-300
                   group-hover:scale-110
+                    hidden
+                  hover:visible
+
                 "
-                >
+                > */}
+                <div
+  className="
+    w-6
+    h-6
+    rounded-full
+    bg-accent/20
+    backdrop-blur-md
+    flex
+    items-center
+    justify-center
+    text-white
+    opacity-0
+    group-hover:opacity-100
+    transition-all
+    duration-300
+    group-hover:scale-110
+    pointer-events-none
+    group-hover:pointer-events-auto
+    border-accent
+    border-2
+  "
+>
                   <ArrowRight
                     className="
                     w-4
@@ -177,10 +214,30 @@ export default function Home() {
                     transition-transform
                     duration-300
                     group-hover:translate-x-0.5
+                  
                   "
                   />
                 </div>
               </div>
+
+              {/* HIGHLIGHT RING — terlihat saat hover/focus */}
+              <div
+                className="
+                absolute
+                inset-0
+                z-20
+                pointer-events-none
+                rounded-3xl
+                ring-2
+                ring-inset
+                ring-accent
+                opacity-0
+                group-hover:opacity-100
+                focus-visible:opacity-100
+                transition-opacity
+                duration-300
+              "
+              />
 
               {/* CARD CONTENT */}
               <div
@@ -235,17 +292,28 @@ export default function Home() {
                   {unit.desc}
                 </p>
 
-                {/* ACTION */}
+                {/* ACTION — pill shape agar jelas bisa diklik */}
                 <div
                   className="
                   mt-4
-                  flex
+                  inline-flex
                   items-center
-                  text-sm
+                  gap-2
+                  self-start
+                  px-3.5
+                  py-1.5
+                  rounded-full
+                  text-xs
+                  sm:text-sm
                   font-semibold
-                  text-white/90
-                  group-hover:text-accent
-                  transition-colors
+                  text-white
+                  bg-accent/90
+                  shadow-md
+                  shadow-accent/25
+                  transition-all
+                  duration-300
+                  group-hover:bg-accent
+                  group-hover:gap-3
                 "
                 >
                   <span>Lihat Data Unit</span>
@@ -254,7 +322,6 @@ export default function Home() {
                     className="
                     w-3.5
                     h-3.5
-                    ml-2
                     transition-transform
                     duration-300
                     group-hover:translate-x-1
