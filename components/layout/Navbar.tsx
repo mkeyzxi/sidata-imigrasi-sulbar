@@ -8,6 +8,7 @@ import Image from 'next/image'
 
 const navLinks = [
   {href: '/', label: 'Beranda'},
+  {href: '/berita', label: 'Berita'},
   {href: '/kegiatan', label: 'Kegiatan'},
   {href: '/data', label: 'Data'},
   {href: '/tentang', label: 'Tentang'},
@@ -161,6 +162,13 @@ export default function Navbar() {
                 className={linkClass(isUnitKerjaActive)}
               >
                 Unit Kerja
+              </Link>
+              <Link
+                href="/berita"
+                onClick={() => setIsOpen(false)}
+                className={linkClass(isActive('/berita'))}
+              >
+                Berita
               </Link>
               <Link
                 href="/kegiatan"

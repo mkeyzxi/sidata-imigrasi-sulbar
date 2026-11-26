@@ -132,13 +132,13 @@ function AdminKegiatanContent() {
 
       const localAccess = effectiveAccess(resolved)
 
-      // Ambil daftar kegiatan via API admin
+      // Ambil daftar kegiatan via API admin (semua unit agar seluruh berita
+      // yang akan tampil di halaman /berita dapat dikelola & dipantau)
       try {
         const token = session.access_token
-        const res = await fetch(
-          `/api/admin/kegiatan${localAccess.role !== 'superadmin' && localAccess.unit_slug ? `?unit_id=${localAccess.unit_slug}` : ''}`,
-          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-        )
+        const res = await fetch('/api/admin/kegiatan?scope=all', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (res.ok) {
           const json = await res.json()
           setKegiatan(json.kegiatan || [])
@@ -155,6 +155,7 @@ function AdminKegiatanContent() {
         .order('date', { ascending: false })
 
       if (localAccess.role !== 'superadmin' && localAccess.unit_slug) {
+        // Viewer/unit admin yang API-nya belum tersedia: tetap batasi sesuai unit
         query = query.eq('unit_id', localAccess.unit_slug)
       }
 
@@ -223,10 +224,9 @@ function AdminKegiatanContent() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      const res = await fetch(
-        `/api/admin/kegiatan${access.role !== 'superadmin' && access.unit_slug ? `?unit_id=${access.unit_slug}` : ''}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-      )
+      const res = await fetch('/api/admin/kegiatan?scope=all', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (res.ok) {
         const json = await res.json()
         setKegiatan(json.kegiatan || [])
@@ -240,9 +240,8 @@ function AdminKegiatanContent() {
       .from('kegiatan')
       .select('*')
       .order('date', { ascending: false })
-    if (access.role !== 'superadmin' && access.unit_slug) {
-      query = query.eq('unit_id', access.unit_slug)
-    }
+    // Fallback langsung ke Supabase: RLS membatasi admin unit hanya pada
+    // unitnya sendiri (lihat migrations 006), sehingga tetap aman.
     const { data } = await query
     setKegiatan(data || [])
   }
@@ -399,6 +398,11 @@ function AdminKegiatanContent() {
               {user
                 ? ` · ${roleLabel(access.role)}${access.unit_slug ? ' · ' + (UNIT_SLUG_MAP[access.unit_slug]?.label ?? access.unit_slug) : ''}`
                 : ''}
+            </p>
+            <p className="text-xs text-text/50 mt-2 max-w-xl">
+              Berita yang ditambahkan akan tersimpan ke Supabase dan otomatis
+              muncul di menu <Link href="/berita" className="text-accent hover:underline font-bold">Berita</Link>
+              (melanjutkan daftar berita statis bawaan).
             </p>
           </div>
 
@@ -572,8 +576,9 @@ function AdminKegiatanContent() {
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                         className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       >
-                        <option value="Intel-WAS">Intel-WAS</option>
+                        <option value="Berita">Berita</option>
                         <option value="Koordinasi">Koordinasi</option>
+                        <option value="Intel-WAS">Intel-WAS</option>
                         <option value="Pelayanan">Pelayanan</option>
                       </select>
                     </div>

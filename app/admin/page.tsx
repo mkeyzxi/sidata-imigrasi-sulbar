@@ -16,6 +16,7 @@ import {
   Plus,
   CheckCircle,
   X,
+  Coins,
 } from 'lucide-react'
 import { roleLabel, roleColor } from '@/lib/utils/access'
 import { UNIT_SLUG_MAP } from '@/lib/utils/access'
@@ -179,7 +180,8 @@ export default function AdminPage() {
                 </h3>
               </div>
               <p className="text-sm text-text/70">
-                Tambah, edit, dan hapus artikel/kegiatan dari menu publik
+                Tambah, edit, dan hapus artikel/kegiatan — tersimpan ke Supabase
+                dan otomatis tampil di menu <Link href="/berita" className="text-accent hover:underline">Berita</Link>
               </p>
             </Link>
 
@@ -200,6 +202,28 @@ export default function AdminPage() {
                 Perbarui data paspor, izin tinggal, dan anggaran
               </p>
             </Link>
+
+            {/* Serapan Anggaran Kanwil (kanwil & superadmin only) */}
+            {(user?.role === 'superadmin' ||
+              (user?.role === 'admin_kanwil' && user.unit_slug === 'kanwil-sulbar') ||
+              (user?.role === 'admin' && user.unit_slug === 'kanwil-sulbar')) && (
+              <Link
+                href="/admin/serapan"
+                className="group flex flex-col p-6 bg-background rounded-xl border border-border hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-accent/10 text-accent rounded-xl flex items-center justify-center">
+                    <Coins className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-heading group-hover:text-primary-dark transition-colors">
+                    Serapan Anggaran
+                  </h3>
+                </div>
+                <p className="text-sm text-text/70">
+                  Input realisasi anggaran per bidang & bulan untuk Kanwil
+                </p>
+              </Link>
+            )}
 
             {/* User Management (Superadmin only) */}
             {user?.role === 'superadmin' && (
