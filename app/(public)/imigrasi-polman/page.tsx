@@ -71,7 +71,7 @@ export default async function ImigrasiPolmanPage() {
         {/* Foto Gedung - Floating Modern Card */}
         <div className="lg:w-1/2 relative h-[320px] md:h-[420px] w-full bg-surface overflow-hidden rounded-3xl shadow-xl transition-all duration-500 hover:shadow-2xl">
           <Image
-            src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&q=80"
+            src="/hero-image/kanwil-polman.webp"
             alt="Gedung Kantor Imigrasi Polman"
             fill
             className="object-cover transition-transform duration-700 hover:scale-105"

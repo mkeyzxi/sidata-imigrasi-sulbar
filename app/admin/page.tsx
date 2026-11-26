@@ -161,12 +161,12 @@ export default function AdminPage() {
               Modul Pengelolaan Konten
             </h2>
             <p className="text-text/70 mt-2">
-              Kelola berita, kegiatan, dan data sesuai peran Anda
+              Kelola kegiatan dan data sesuai peran Anda
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Berita / Kegiatan */}
+            {/* Kegiatan */}
             <Link
               href={`/admin/kegiatan${user?.unit_slug ? `?unit=${user.unit_slug}` : ''}`}
               className="group flex flex-col p-6 bg-background rounded-xl border border-border hover:shadow-md transition-all"
@@ -181,7 +181,7 @@ export default function AdminPage() {
               </div>
               <p className="text-sm text-text/70">
                 Tambah, edit, dan hapus kegiatan — tersimpan ke Supabase
-                dan otomatis tampil di menu <Link href="/kegiatan" className="text-accent hover:underline">Kegiatan</Link>
+                dan otomatis tampil di menu Kegiatan publik
               </p>
             </Link>
 
@@ -263,7 +263,7 @@ export default function AdminPage() {
             <div className="bg-background rounded-xl p-4">
               <div className="text-sm font-bold text-heading mb-2">Admin Unit</div>
               <p className="text-xs text-text/70">
-                Kelola berita dan data untuk unit masing-masing
+                Kelola kegiatan dan data untuk unit masing-masing
               </p>
             </div>
             <div className="bg-background rounded-xl p-4">

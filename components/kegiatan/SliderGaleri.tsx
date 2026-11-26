@@ -4,14 +4,14 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react'
 
-type BeritaSliderProps = {
+type SliderGaleriProps = {
   images: string[]
   alt?: string
   /** Nama placeholder untuk caption tiap gambar */
   captions?: string[]
 }
 
-export default function BeritaSlider({ images, alt = 'Dokumentasi berita', captions }: BeritaSliderProps) {
+export default function SliderGaleri({ images, alt = 'Dokumentasi kegiatan', captions }: SliderGaleriProps) {
   const [index, setIndex] = useState(0)
   const [lightbox, setLightbox] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)

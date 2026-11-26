@@ -4,7 +4,7 @@ import {notFound} from 'next/navigation'
 import {ArrowLeft, CalendarDays, MapPin, Building2, Tag, ChevronRight, Share2} from 'lucide-react'
 import {getKegiatanDetail} from '@/lib/supabase/data-service'
 import {formatDate} from '@/lib/utils/format'
-import BeritaSlider from '@/components/berita/BeritaSlider'
+import SliderGaleri from '@/components/kegiatan/SliderGaleri'
 
 export default async function ActivityDetailPage({params}: {params: Promise<{id: string}>}) {
   const {id} = await params
@@ -116,7 +116,7 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
           />
         </figure>
 
-        {/* Galeri Dokumentasi (jika ada banyak gambar, mis. berita statis) */}
+        {/* Galeri Dokumentasi (jika ada banyak gambar, mis. kegiatan statis) */}
         {gallery && (
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-5">
@@ -125,7 +125,7 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
                 Galeri Dokumentasi
               </h3>
             </div>
-            <BeritaSlider
+            <SliderGaleri
               images={gallery}
               alt={kegiatan.title}
               captions={[

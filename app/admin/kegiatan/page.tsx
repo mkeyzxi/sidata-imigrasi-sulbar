@@ -132,8 +132,8 @@ function AdminKegiatanContent() {
 
       const localAccess = effectiveAccess(resolved)
 
-      // Ambil daftar kegiatan via API admin (semua unit agar seluruh berita
-      // yang akan tampil di halaman /berita dapat dikelola & dipantau)
+      // Ambil daftar kegiatan via API admin (semua unit agar seluruh data
+      // yang akan tampil di halaman /kegiatan dapat dikelola & dipantau)
       try {
         const token = session.access_token
         const res = await fetch('/api/admin/kegiatan?scope=all', {
@@ -400,8 +400,8 @@ function AdminKegiatanContent() {
                 : ''}
             </p>
             <p className="text-xs text-text/50 mt-2 max-w-xl">
-              Kegiatan/berita yang ditambahkan akan tersimpan ke Supabase dan otomatis
-              muncul di menu <Link href="/kegiatan" className="text-accent hover:underline font-bold">Kegiatan</Link>
+              Kegiatan yang ditambahkan akan tersimpan ke Supabase dan otomatis
+              muncul di menu <span className="text-accent font-bold">Kegiatan</span>
               (melanjutkan daftar kegiatan statis bawaan).
             </p>
           </div>

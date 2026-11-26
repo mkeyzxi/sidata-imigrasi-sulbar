@@ -25,7 +25,7 @@ import {
   kanwilKegiatan as defaultKanwilKegiatan,
   kanwilSerapanBidang as defaultKanwilSerapan,
 } from '@/lib/data/kanwil'
-import {daftarBeritaStatis, KegiatanStatis} from '@/lib/data/berita'
+import {daftarKegiatanStatis, KegiatanStatis} from '@/lib/data/kegiatan'
 
 const UNIT_NAME_MAP: Record<string, string> = {
   'kanwil-sulbar': 'Kanwil Sulbar',
@@ -41,11 +41,11 @@ export type KegiatanItem = Omit<KegiatanStatis, 'source'> & {
 }
 
 /**
- * Data statis bawaan (berita koordinasi BKN 17 November 2026) —
+ * Data statis bawaan (koordinasi BKN 17 November 2026) —
  * selalu tampil sebagai bagian dari daftar kegiatan tanpa perlu
  * menunggu database.
  */
-const kegiatanStatis: KegiatanItem[] = daftarBeritaStatis.map((b) => ({
+const kegiatanStatis: KegiatanItem[] = daftarKegiatanStatis.map((b) => ({
   id: b.id,
   title: b.title,
   date: b.date,

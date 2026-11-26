@@ -55,7 +55,7 @@ export default async function KanwilSulbarPage() {
         {/* Foto Gedung - Seamless Elevated Card */}
         <div className="lg:w-1/2 relative h-[320px] sm:h-[400px] w-full bg-surface rounded-2xl overflow-hidden shadow-md group">
           <Image
-            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80"
+            src="/hero-image/kanwil-sulbar.webp"
             alt="Gedung Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat"
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-105"

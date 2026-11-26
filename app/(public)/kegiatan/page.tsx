@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Search, SearchX, Filter, CalendarDays, Loader2, Building2 } from 'lucide-react'
 import ActivityCard from '@/components/activities/ActivityCard'
-import {daftarBeritaStatis} from '@/lib/data/berita'
+import {daftarKegiatanStatis} from '@/lib/data/kegiatan'
 
 const UNIT_FILTERS = [
   { id: 'all', label: 'Semua Unit' },
@@ -26,9 +26,9 @@ type ActivityItem = {
 }
 
 export default function KegiatanPage() {
-  // Kegiatan statis bawaan (berita koordinasi BKN 17 November 2026)
+  // Kegiatan statis bawaan (koordinasi BKN 17 November 2026)
   // langsung muncul tanpa menunggu database
-  const defaultKegiatan: ActivityItem[] = daftarBeritaStatis.map((b) => ({
+  const defaultKegiatan: ActivityItem[] = daftarKegiatanStatis.map((b) => ({
     id: b.id,
     title: b.title,
     date: b.date,
@@ -46,7 +46,7 @@ export default function KegiatanPage() {
   const [searchQuery, setSearchQuery] = useState<string>('')
 
   // Muat kegiatan tambahan dari Supabase melalui API (menggabungkan
-  // daftar statis + data dinamis; berita statis tidak akan hilang)
+  // daftar statis + data dinamis; kegiatan statis tidak akan hilang)
   useEffect(() => {
     async function fetchKegiatan() {
       try {

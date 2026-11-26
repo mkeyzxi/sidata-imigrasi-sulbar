@@ -27,7 +27,7 @@ const IMAGE_1 = '/kegiatan-image/kordinasi-bkn-satu.webp'
 const IMAGE_2 = '/kegiatan-image/kordinasi-bkn-dua.webp'
 const IMAGE_3 = '/kegiatan-image/kordinasi-bkn-tiga.webp'
 
-export const beritaUtama: KegiatanStatis = {
+export const kegiatanUtama: KegiatanStatis = {
   id: 'statis-1',
   title:
     'Koordinasi di BKN bersama Panitia Pusat, Kanwil Ditjenim, dan Kanwil Ditjenpas terkait Persiapan Uji Penyesuaian Ijazah dan Ujian Dinas',
@@ -46,4 +46,4 @@ export const beritaUtama: KegiatanStatis = {
   source: 'statis',
 }
 
-export const daftarBeritaStatis: KegiatanStatis[] = [beritaUtama]
+export const daftarKegiatanStatis: KegiatanStatis[] = [kegiatanUtama]
