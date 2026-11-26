@@ -93,7 +93,7 @@ export function effectiveAccess(profile: {
   }
 
   const role = profile.role ?? 'viewer'
-  let unit_slug = profile.unit_slug ?? unitFromRole(role)
+  const unit_slug = profile.unit_slug ?? unitFromRole(role)
 
   // Jika role admin tapi unit belum terisi, coba cek email map jika ada
   if (!unit_slug && profile.email) {

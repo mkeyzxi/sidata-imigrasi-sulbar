@@ -4,23 +4,21 @@ import {
   ArrowLeft,
   ChevronRight,
   Building2,
-  Calendar,
-  FileCheck2,
+ 
   ShieldAlert,
-  PieChart,
-  TrendingUp,
+ 
   MapPin,
-  ArrowRight,
+
   BarChart3,
   UserCheck,
   Coins,
 } from 'lucide-react'
-import { getMamujuData, getKegiatanList } from '@/lib/supabase/data-service'
+import { getMamujuData, getKegiatanList, type MamujuData } from '@/lib/supabase/data-service'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import ActivityCard from '@/components/activities/ActivityCard'
 
 export default async function ImigasiMamujuPage() {
-  const data = await getMamujuData(2026)
+  const data: MamujuData = await getMamujuData(2026)
   const mamujuKegiatan = await getKegiatanList({ unit_id: 'imigrasi-mamuju', limit: 4 })
 
   const mamujuPassportData = data.passportData
@@ -130,7 +128,7 @@ export default async function ImigasiMamujuPage() {
               Paspor Elektronik
             </span>
             <div className="text-4xl font-black text-heading tracking-tight">
-              {formatNumber((mamujuPassportData.breakdown as any).pasporElektronik?.total ?? 0)}
+              {formatNumber(mamujuPassportData.breakdown.pasporElektronik?.total ?? 0)}
             </div>
             <span className="text-sm text-text/50 mt-2 block font-medium">48 Halaman</span>
           </div>
@@ -140,7 +138,7 @@ export default async function ImigasiMamujuPage() {
               Paspor Biasa
             </span>
             <div className="text-4xl font-black text-heading tracking-tight">
-              {formatNumber((mamujuPassportData.breakdown as any).pasporBiasa?.total ?? 0)}
+              {formatNumber(mamujuPassportData.breakdown.pasporBiasa?.total ?? 0)}
             </div>
             <span className="text-sm text-text/50 mt-2 block font-medium">48 Halaman</span>
           </div>
@@ -159,13 +157,13 @@ export default async function ImigasiMamujuPage() {
                 <tr className="hover:bg-muted/40 transition-colors rounded-xl">
                   <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Paspor Biasa 48 Halaman</td>
                   <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber((mamujuPassportData.breakdown as any).pasporBiasa?.total ?? 0)}
+                    {formatNumber(mamujuPassportData.breakdown.pasporBiasa?.total ?? 0)}
                   </td>
                 </tr>
                 <tr className="hover:bg-muted/40 transition-colors rounded-xl">
                   <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Paspor Elektronik 48 Halaman</td>
                   <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber((mamujuPassportData.breakdown as any).pasporElektronik?.total ?? 0)}
+                    {formatNumber(mamujuPassportData.breakdown.pasporElektronik?.total ?? 0)}
                   </td>
                 </tr>
               </tbody>

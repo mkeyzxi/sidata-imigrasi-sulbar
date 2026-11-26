@@ -26,6 +26,7 @@ import {
   kanwilSerapanBidang as defaultKanwilSerapan,
 } from '@/lib/data/kanwil'
 import {daftarKegiatanStatis, KegiatanStatis} from '@/lib/data/kegiatan'
+import {resolveActivityImage, resolveActivityGallery} from '@/lib/supabase/image-url'
 
 const UNIT_NAME_MAP: Record<string, string> = {
   'kanwil-sulbar': 'Kanwil Sulbar',
@@ -60,6 +61,46 @@ const kegiatanStatis: KegiatanItem[] = daftarKegiatanStatis.map((b) => ({
 }))
 
 /**
+ * Deteksi apakah kolom `gallery` sudah ada di tabel kegiatan (migration 012).
+ * Dikumpulkan sekali per process; bila belum ada, query tidak akan memilih
+ * field gallery agar tidak error, dan galeri dinonaktifkan sementara.
+ */
+/**
+ * Baris hasil query tabel `kegiatan` — memuat kolom `gallery` (JSONB) yang
+ * hanya ada setelah migration 012. Dipakai sebagai type-alias agar select
+ * eksplisit (dengan field dinamis) tetap lolos type-check.
+ */
+type KEGIATAN_ROW = {
+  id: number
+  title: string
+  description: string | null
+  date: string
+  location: string | null
+  type: string | null
+  image_url: string | null
+  unit_id: string
+  bidang_id: string | null
+  published: boolean
+  /** Hanya terisi bila kolom gallery sudah ada di DB (migration 012) */
+  gallery?: unknown
+  bidang?: {name: string} | null
+}
+
+let _galleryColumnAvailable: boolean | null = null
+async function hasGalleryColumn(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+): Promise<boolean> {
+  if (_galleryColumnAvailable !== null) return _galleryColumnAvailable
+  try {
+    const {error} = await supabase.from('kegiatan').select('id, gallery').limit(1)
+    _galleryColumnAvailable = !error
+  } catch {
+    _galleryColumnAvailable = false
+  }
+  return _galleryColumnAvailable
+}
+
+/**
  * Mengambil daftar berita & kegiatan publik yang terbit dari Supabase.
  * Daftar kegiatan statis (bawaan) selalu disertakan di awal; data Supabase
  * akan melanjutkan/melanjutkan daftar tersebut.
@@ -73,9 +114,16 @@ export async function getKegiatanList(options?: {
 
   try {
     const supabase = createSupabaseServerClient()
+    // Pilih field eksplisit. Field `gallery` hanya dimasukkan bila
+    // kolomnya sudah ada (migration 012) agar tidak error di DB lama.
+    const galleryAvail = await hasGalleryColumn(supabase)
+    const selectFields = galleryAvail
+      ? 'id, title, description, date, location, type, image_url, unit_id, bidang_id, published, gallery, bidang:bidang(name)'
+      : 'id, title, description, date, location, type, image_url, unit_id, bidang_id, published, bidang:bidang(name)'
+
     let query = supabase
       .from('kegiatan')
-      .select('*, bidang:bidang(name)')
+      .select(selectFields)
       .eq('published', true)
       .order('date', {ascending: false})
 
@@ -89,25 +137,41 @@ export async function getKegiatanList(options?: {
       query = query.limit(options.limit)
     }
 
-    const {data, error} = await query
+    const {data, error} = await (query as unknown as {
+      then: (
+        r: (v: {data: KEGIATAN_ROW[] | null; error: {message: string} | null}) => void,
+      ) => void
+    })
 
     if (!error && data && data.length > 0) {
-      supabaseData = data.map((item) => ({
-        id: item.id,
-        title: item.title,
-        date: item.date,
-        location: item.location || '',
-        type: item.type || 'Intel-WAS',
-        description: item.description || '',
-        image:
-          item.image_url ||
-          'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80',
-        unit: UNIT_NAME_MAP[item.unit_id] || item.unit_id,
-        unit_id: item.unit_id,
-        bidang: item.bidang?.name || undefined,
-        bidang_id: item.bidang_id || undefined,
-        source: 'supabase' as const,
-      }))
+      supabaseData = data.map((item) => {
+        // Bangun galeri dari kolom `gallery` maupun JSON array di `image_url` (maks 3 gambar)
+        const gallery = resolveActivityGallery(
+          Array.isArray(item.gallery) ? (item.gallery as string[]) : undefined,
+          item.image_url,
+        ).slice(0, 3)
+
+        const displayImage =
+          gallery[0] ||
+          resolveActivityImage(item.image_url) ||
+          'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80'
+
+        return {
+          id: item.id,
+          title: item.title,
+          date: item.date,
+          location: item.location || '',
+          type: item.type || 'Intel-WAS',
+          description: item.description || '',
+          image: displayImage,
+          gallery: gallery.length > 1 ? gallery : undefined,
+          unit: UNIT_NAME_MAP[item.unit_id] || item.unit_id,
+          unit_id: item.unit_id,
+          bidang: item.bidang?.name || undefined,
+          bidang_id: item.bidang_id || undefined,
+          source: 'supabase' as const,
+        } satisfies KegiatanItem
+      })
     }
   } catch (err) {
     console.warn('[data-service] Gagal memuat kegiatan dari Supabase, menggunakan fallback:', err)
@@ -134,19 +198,38 @@ export async function getKegiatanList(options?: {
  */
 export async function getKegiatanDetail(id: number | string) {
   const supabase = createSupabaseServerClient()
-  let item = null
+  let item: KEGIATAN_ROW | null = null
 
   // 1. Coba cari di data statis bawaan (berita koordinasi BKN dkk)
   const foundStatis = kegiatanStatis.find((k) => String(k.id) === String(id))
-  if (foundStatis) return {...foundStatis, published: true}
+  if (foundStatis) {
+    return {
+      ...foundStatis,
+      image: resolveActivityImage(foundStatis.image),
+      gallery:
+        foundStatis.gallery && foundStatis.gallery.length > 1
+          ? resolveActivityGallery(foundStatis.gallery)
+          : undefined,
+      published: true,
+    }
+  }
 
   // 2. Coba dari Supabase (hanya jika terbit)
-  const {data, error} = await supabase
-    .from('kegiatan')
-    .select('*, bidang:bidang(name)')
-    .eq('id', Number(id))
-    .eq('published', true)
-    .single()
+  const galleryAvail = await hasGalleryColumn(supabase)
+  const selectFields = galleryAvail
+    ? 'id, title, description, date, location, type, image_url, unit_id, bidang_id, published, gallery, bidang:bidang(name)'
+    : 'id, title, description, date, location, type, image_url, unit_id, bidang_id, published, bidang:bidang(name)'
+  const {data, error} = await (
+    supabase
+      .from('kegiatan')
+      .select(selectFields)
+      .eq('id', Number(id))
+      .eq('published', true)
+      .single() as unknown as {
+      data: KEGIATAN_ROW | null
+      error: {message: string} | null
+    }
+  )
 
   if (!error && data) {
     item = data
@@ -182,7 +265,9 @@ export async function getKegiatanDetail(id: number | string) {
       location: found.location || '',
       type: found.type || 'Intel-WAS',
       description: found.description || '',
-      image: found.image || 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80',
+      image: resolveActivityImage(
+        found.image || 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80',
+      ),
       unit: found.unit,
       unit_id: found.unit_id,
       bidang: found.bidang || undefined,
@@ -191,6 +276,16 @@ export async function getKegiatanDetail(id: number | string) {
     }
   }
 
+  const gallery = resolveActivityGallery(
+    Array.isArray(item.gallery) ? (item.gallery as string[]) : undefined,
+    item.image_url,
+  ).slice(0, 3)
+
+  const displayImage =
+    gallery[0] ||
+    resolveActivityImage(item.image_url) ||
+    'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80'
+
   return {
     id: item.id,
     title: item.title,
@@ -198,14 +293,14 @@ export async function getKegiatanDetail(id: number | string) {
     location: item.location || '',
     type: item.type || 'Intel-WAS',
     description: item.description || '',
-    image:
-      item.image_url ||
-      'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80',
+    image: displayImage,
+    gallery: gallery.length > 1 ? gallery : undefined,
     unit: UNIT_NAME_MAP[item.unit_id] || item.unit_id,
     unit_id: item.unit_id,
     bidang: item.bidang?.name || undefined,
     bidang_id: item.bidang_id || undefined,
     published: true,
+    source: 'supabase' as const,
   }
 }
 
@@ -295,10 +390,86 @@ export async function getRegionalStats(year: number = 2026) {
   }
 }
 
+export interface MamujuPassportData {
+  total: number
+  year: number
+  breakdown: {
+    baru: { l: number; p: number; total: number }
+    baruPercepatan: { l: number; p: number; total: number }
+    gantiMasaBerlaku: { l: number; p: number; total: number }
+    gantiHilang: { l: number; p: number; total: number }
+    gantiRusak: { l: number; p: number; total: number }
+    gantiHalamanPenuh: { l: number; p: number; total: number }
+    gantiMasihBerlakuPercepatan: { l: number; p: number; total: number }
+    pasporBiasa: { total: number }
+    pasporElektronik: { total: number }
+  }
+}
+
+export interface MamujuData {
+  passportData: MamujuPassportData
+  izinTinggal: {
+    total: number
+    itk: number
+    itap: number
+    itas: number
+  }
+  wna: {
+    total: number
+    aktif: number
+    akanExpired: number
+    sudahExpired: number
+  }
+  tak: {
+    total: number
+    orang: number
+    jenisPerTAK: {
+      bertempat: number
+      deportasi: number
+      pencegahan: number
+    }
+  }
+  bap: {
+    wni: number
+    wna: number
+    total: number
+    hilang: number
+    rusak: number
+  }
+  intelWas: {
+    total: number
+    totalPetugas: number
+    breakdown: {
+      operasiIntelijen: { kegiatan: number; petugas: number }
+      operasiMandiri: { kegiatan: number; petugas: number }
+      patroli: { kegiatan: number; petugas: number }
+      opGabungan: { kegiatan: number; petugas: number }
+      rapatTimpora: { kegiatan: number; petugas: number }
+      desaBinaan: { kegiatan: number; petugas: number }
+    }
+  }
+  perlintasan: {
+    total: number
+    kedatangan: number
+    keberangkatan: number
+  }
+  anggaran: {
+    pagu: number
+    realisasi: number
+    persentase: number
+  }
+  pnbp: {
+    target: number
+    realisasi: number
+    persentase: number
+  }
+  serapanBulanan: { bulan: string; jumlah: number }[]
+}
+
 /**
  * Mengambil data statistik lengkap untuk Kanim Mamuju dari Supabase
  */
-export async function getMamujuData(year: number = 2026) {
+export async function getMamujuData(year: number = 2026): Promise<MamujuData> {
   try {
     const supabase = createSupabaseServerClient()
     const {data, error} = await supabase
@@ -483,10 +654,43 @@ export async function getMamujuData(year: number = 2026) {
   }
 }
 
+export interface PolmanData {
+  passportData: {
+    total: number
+    year: number
+    breakdown: {
+      baru: number
+      penggantian: number
+    }
+  }
+  izinTinggal: {
+    total: number
+    itk: number
+    itap: number
+    itas: number
+  }
+  anggaran: {
+    pagu: number
+    realisasi: number
+    persentase: number
+    breakdown: {
+      pegawai: { pagu: number; realisasi: number }
+      barang: { pagu: number; realisasi: number }
+      modal: { pagu: number; realisasi: number }
+    }
+  }
+  pnbp: {
+    target: number
+    realisasi: number
+    persentase: number
+  }
+  serapanBulanan: { bulan: string; jumlah: number }[]
+}
+
 /**
  * Mengambil data statistik lengkap untuk Kanim Polman dari Supabase
  */
-export async function getPolmanData(year: number = 2026) {
+export async function getPolmanData(year: number = 2026): Promise<PolmanData> {
   try {
     const supabase = createSupabaseServerClient()
     const {data, error} = await supabase
@@ -573,7 +777,7 @@ export async function getPolmanData(year: number = 2026) {
     anggaran: defaultPolmanAnggaran,
     pnbp: defaultPolmanPNBP,
     serapanBulanan: defaultPolmanSerapan,
-  }
+  } as PolmanData
 }
 
 /**
@@ -697,20 +901,30 @@ export async function getBidangDetail(slug: string) {
 
       return {
         bidang,
-        kegiatan: (kegiatan || []).map((k) => ({
-          id: k.id,
-          title: k.title,
-          date: k.date,
-          location: k.location || '',
-          type: k.type || 'Intel-WAS',
-          description: k.description || '',
-          image:
-            k.image_url ||
-            'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80',
-          unit: 'Kanwil Sulbar',
-          unit_id: 'kanwil-sulbar',
-          bidang: bidang.name,
-        })),
+        kegiatan: (kegiatan || []).map((k) => {
+          const kGallery = resolveActivityGallery(
+            Array.isArray((k as {gallery?: unknown}).gallery)
+              ? ((k as {gallery?: string[]}).gallery as string[])
+              : undefined,
+            k.image_url,
+          ).slice(0, 3)
+          return {
+            id: k.id,
+            title: k.title,
+            date: k.date,
+            location: k.location || '',
+            type: k.type || 'Intel-WAS',
+            description: k.description || '',
+            image:
+              kGallery[0] ||
+              resolveActivityImage(k.image_url) ||
+              'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&q=80',
+            gallery: kGallery.length > 1 ? kGallery : undefined,
+            unit: 'Kanwil Sulbar',
+            unit_id: 'kanwil-sulbar',
+            bidang: bidang.name,
+          }
+        }),
         serapan:
           formattedSerapan.length > 0
             ? formattedSerapan

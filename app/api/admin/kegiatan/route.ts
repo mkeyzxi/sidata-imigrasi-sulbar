@@ -3,6 +3,9 @@ import {cookies} from 'next/headers'
 import {createServerClient} from '@supabase/ssr'
 import {createSupabaseServerClient} from '@/lib/supabase/server'
 import {canManageUnit} from '@/lib/utils/access'
+import {parseRawImageList} from '@/lib/supabase/image-url'
+
+const MAX_GALLERY_IMAGES = 3
 
 type AuthGate =
   | {status: number; error: string}
@@ -67,6 +70,26 @@ async function verifyAuth(req: Request): Promise<AuthGate> {
   return {service, profile}
 }
 
+/** Normalisasi daftar gambar dari body request (maksimal 3 gambar). */
+function normalizeGalleryInput(rawGallery: unknown, rawImageUrl: string | null): string[] {
+  const fromGallery = Array.isArray(rawGallery)
+    ? rawGallery
+        .filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
+        .map((g) => g.trim())
+    : []
+  const fromImageUrl = rawImageUrl ? parseRawImageList(rawImageUrl) : []
+
+  // Jika user mengunggah/mengisi galeri, prioritaskan galeri; sertakan URL manual jika bukan fallback
+  const merged =
+    fromGallery.length > 0
+      ? Array.from(
+          new Set([...fromGallery, ...fromImageUrl.filter((u) => !u.includes('unsplash.com'))]),
+        )
+      : fromImageUrl
+
+  return merged.slice(0, MAX_GALLERY_IMAGES)
+}
+
 // GET: Ambil daftar kegiatan (dengan batas unit untuk admin biasa)
 export async function GET(req: Request) {
   const gate = await verifyAuth(req)
@@ -79,10 +102,7 @@ export async function GET(req: Request) {
   // ?scope=all -> semua unit (hanya superadmin; default tetap sesuai peran)
   const scope = searchParams.get('scope')
 
-  let query = gate.service
-    .from('kegiatan')
-    .select('*')
-    .order('date', {ascending: false})
+  let query = gate.service.from('kegiatan').select('*').order('date', {ascending: false})
 
   // Jika bukan superadmin, paksa query hanya untuk unit yang dimiliki
   if (gate.profile.role !== 'superadmin') {
@@ -105,7 +125,22 @@ export async function GET(req: Request) {
     return NextResponse.json({error: error.message}, {status: 500})
   }
 
-  return NextResponse.json({kegiatan: data || []})
+  // Normalisasi row: bila `image_url` menyimpan JSON array (fallback saat kolom gallery belum ada),
+  // pecah menjadi `image_url` (gambar pertama) + `gallery` (array path lengkap) untuk UI admin.
+  const normalized = (data || []).map((row) => {
+    const combined = parseRawImageList(
+      row.image_url as string | null,
+      (row as {gallery?: unknown}).gallery,
+    ).slice(0, MAX_GALLERY_IMAGES)
+    return {
+      ...row,
+      image_url: combined[0] || row.image_url || null,
+      gallery:
+        combined.length > 0 ? combined : (row as {gallery?: string[] | null}).gallery || null,
+    }
+  })
+
+  return NextResponse.json({kegiatan: normalized})
 }
 
 // POST: Tambah kegiatan baru
@@ -128,9 +163,19 @@ export async function POST(req: Request) {
   const description = body.description ? String(body.description).trim() : null
   const location = body.location ? String(body.location).trim() : null
   const type = body.type ? String(body.type).trim() : 'Intel-WAS'
-  const imageUrl = body.image_url ? String(body.image_url).trim() : null
+  const rawImageUrl = body.image_url ? String(body.image_url).trim() : null
   const published = body.published !== undefined ? Boolean(body.published) : true
   const bidangId = body.bidang_id ? String(body.bidang_id).trim() : null
+
+  if (Array.isArray(body.gallery) && body.gallery.length > MAX_GALLERY_IMAGES) {
+    return NextResponse.json(
+      {error: `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan.`},
+      {status: 400},
+    )
+  }
+
+  const gallery = normalizeGalleryInput(body.gallery, rawImageUrl)
+  const primaryImageUrl = gallery[0] || rawImageUrl || null
 
   if (!title) {
     return NextResponse.json({error: 'Judul kegiatan wajib diisi.'}, {status: 400})
@@ -160,15 +205,41 @@ export async function POST(req: Request) {
       date,
       location,
       type,
-      image_url: imageUrl,
+      image_url: primaryImageUrl,
+      ...(gallery.length > 0 ? {gallery} : {}),
       published,
       created_by: gate.profile.id,
       updated_at: new Date().toISOString(),
     })
-    .select('*')
+    .select('id, title, date, unit_id, published')
     .single()
 
   if (error) {
+    // Jika kolom `gallery` belum ada di database, simpan seluruh array (maks 3) ke `image_url` sebagai JSON
+    if (error.message.includes('gallery')) {
+      const encodedImageUrl = gallery.length > 1 ? JSON.stringify(gallery) : primaryImageUrl
+
+      const {data: retryData, error: retryError} = await gate.service
+        .from('kegiatan')
+        .insert({
+          unit_id: unitId,
+          bidang_id: bidangId,
+          title,
+          description,
+          date,
+          location,
+          type,
+          image_url: encodedImageUrl,
+          published,
+          created_by: gate.profile.id,
+          updated_at: new Date().toISOString(),
+        })
+        .select('id, title, date, unit_id, published')
+        .single()
+
+      if (retryError) return NextResponse.json({error: retryError.message}, {status: 500})
+      return NextResponse.json({kegiatan: retryData})
+    }
     return NextResponse.json({error: error.message}, {status: 500})
   }
 
@@ -192,6 +263,13 @@ export async function PATCH(req: Request) {
   const id = Number(body.id)
   if (!id) {
     return NextResponse.json({error: 'ID kegiatan wajib disertakan.'}, {status: 400})
+  }
+
+  if (Array.isArray(body.gallery) && body.gallery.length > MAX_GALLERY_IMAGES) {
+    return NextResponse.json(
+      {error: `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan.`},
+      {status: 400},
+    )
   }
 
   // Periksa data kegiatan lama untuk memastikan hak akses unit
@@ -223,8 +301,23 @@ export async function PATCH(req: Request) {
   if (body.location !== undefined)
     updates.location = body.location ? String(body.location).trim() : null
   if (body.type !== undefined) updates.type = body.type ? String(body.type).trim() : 'Intel-WAS'
-  if (body.image_url !== undefined)
-    updates.image_url = body.image_url ? String(body.image_url).trim() : null
+
+  const rawImageUrl =
+    body.image_url !== undefined
+      ? body.image_url
+        ? String(body.image_url).trim()
+        : null
+      : undefined
+  let normalizedGallery: string[] | undefined
+
+  if (body.gallery !== undefined || rawImageUrl !== undefined) {
+    normalizedGallery = normalizeGalleryInput(body.gallery, rawImageUrl ?? null)
+    updates.image_url = normalizedGallery[0] || rawImageUrl || null
+    if (body.gallery !== undefined) {
+      updates.gallery = normalizedGallery.length > 0 ? normalizedGallery : null
+    }
+  }
+
   if (body.published !== undefined) updates.published = Boolean(body.published)
   if (body.bidang_id !== undefined)
     updates.bidang_id = body.bidang_id ? String(body.bidang_id).trim() : null
@@ -238,10 +331,28 @@ export async function PATCH(req: Request) {
     .from('kegiatan')
     .update(updates)
     .eq('id', id)
-    .select('*')
+    .select('id, title, date, unit_id, published')
     .single()
 
   if (error) {
+    // Jika kolom `gallery` belum ada di database, simpan seluruh array (maks 3) ke `image_url` sebagai JSON
+    if (error.message.includes('gallery')) {
+      const updatesWithoutGallery = {...updates}
+      delete updatesWithoutGallery.gallery
+      if (normalizedGallery && normalizedGallery.length > 1) {
+        updatesWithoutGallery.image_url = JSON.stringify(normalizedGallery)
+      }
+
+      const {data: retryData, error: retryError} = await gate.service
+        .from('kegiatan')
+        .update(updatesWithoutGallery)
+        .eq('id', id)
+        .select('id, title, date, unit_id, published')
+        .single()
+
+      if (retryError) return NextResponse.json({error: retryError.message}, {status: 500})
+      return NextResponse.json({kegiatan: retryData})
+    }
     return NextResponse.json({error: error.message}, {status: 500})
   }
 
@@ -265,9 +376,22 @@ export async function DELETE(req: Request) {
 
   const {data: existing, error: existError} = await gate.service
     .from('kegiatan')
-    .select('unit_id')
+    .select('unit_id, image_url')
     .eq('id', id)
     .single()
+
+  // Coba ambil gallery secara terpisah agar tidak crash bila kolom belum ada
+  let gallery: string[] = []
+  try {
+    const {data: gData} = await gate.service
+      .from('kegiatan')
+      .select('gallery')
+      .eq('id', id)
+      .single()
+    if (gData && Array.isArray(gData.gallery)) gallery = gData.gallery
+  } catch {
+    // abaikan bila kolom tidak ada
+  }
 
   if (existError || !existing) {
     return NextResponse.json({error: 'Kegiatan tidak ditemukan.'}, {status: 404})
@@ -284,6 +408,18 @@ export async function DELETE(req: Request) {
 
   if (error) {
     return NextResponse.json({error: error.message}, {status: 500})
+  }
+
+  // Bersihkan gambar di storage (best-effort; tidak memblokir hasil hapus DB)
+  try {
+    const paths = parseRawImageList(existing.image_url as string | null, gallery)
+    // Hanya hapus path yang berada di bawah bucket kegiatan/{unit}/
+    const storagePaths = paths.filter((p) => p.startsWith(`${existing.unit_id}/`))
+    if (storagePaths.length > 0) {
+      await gate.service.storage.from('kegiatan').remove(storagePaths)
+    }
+  } catch {
+    // Abaikan error pembersihan storage; data DB sudah terhapus.
   }
 
   return NextResponse.json({success: true, message: 'Kegiatan berhasil dihapus.'})

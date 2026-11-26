@@ -11,12 +11,12 @@ import {
   ShieldAlert,
   Coins,
 } from 'lucide-react'
-import { getPolmanData, getKegiatanList } from '@/lib/supabase/data-service'
+import { getPolmanData, getKegiatanList, type PolmanData } from '@/lib/supabase/data-service'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import ActivityCard from '@/components/activities/ActivityCard'
 
 export default async function ImigrasiPolmanPage() {
-  const data = await getPolmanData(2026)
+  const data: PolmanData = await getPolmanData(2026)
   const polmanKegiatan = await getKegiatanList({ unit_id: 'imigrasi-polman', limit: 4 })
 
   const polmanPassportData = data.passportData
@@ -57,7 +57,7 @@ export default async function ImigrasiPolmanPage() {
           
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-primary-dark tracking-tight leading-[1.08] mb-6">
             Imigrasi <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-dark via-primary to-accent">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-dark via-primary to-accent">
               Polewali Mandar
             </span>
           </h1>
@@ -69,7 +69,7 @@ export default async function ImigrasiPolmanPage() {
         </div>
 
         {/* Foto Gedung - Floating Modern Card */}
-        <div className="lg:w-1/2 relative h-[320px] md:h-[420px] w-full bg-surface overflow-hidden rounded-3xl shadow-xl transition-all duration-500 hover:shadow-2xl">
+        <div className="lg:w-1/2 relative h-80 md:h-105 w-full bg-surface overflow-hidden rounded-3xl shadow-xl transition-all duration-500 hover:shadow-2xl">
           <Image
             src="/hero-image/kanwil-polman.webp"
             alt="Gedung Kantor Imigrasi Polman"
@@ -77,7 +77,7 @@ export default async function ImigrasiPolmanPage() {
             className="object-cover transition-transform duration-700 hover:scale-105"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
           
           {/* Glass Badge */}
           <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between z-10">
@@ -199,7 +199,7 @@ export default async function ImigrasiPolmanPage() {
           {polmanKegiatan.map((kegiatan) => (
             <div key={kegiatan.id} className="relative pl-8 border-l-2 border-accent/20 pb-2 last:pb-0">
               {/* Indicator Dot */}
-              <div className="absolute -left-[7px] top-1.5 w-3.5 h-3.5 rounded-full bg-accent ring-4 ring-background flex items-center justify-center">
+              <div className="absolute -left-1.75 top-1.5 w-3.5 h-3.5 rounded-full bg-accent ring-4 ring-background flex items-center justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-background" />
               </div>
 
@@ -259,7 +259,7 @@ export default async function ImigrasiPolmanPage() {
         </div>
 
         {/* Ringkasan Anggaran & PNBP */}
-        {(data as any).anggaran && (
+        {data.anggaran && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             <div className="bg-surface p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
               <h3 className="font-extrabold text-lg text-heading mb-6">Realisasi Anggaran</h3>
@@ -268,7 +268,7 @@ export default async function ImigrasiPolmanPage() {
                   Pagu Anggaran
                 </span>
                 <div className="text-2xl font-black text-heading tracking-tight">
-                  {formatCurrency((data as any).anggaran.pagu)}
+                  {formatCurrency(data.anggaran.pagu)}
                 </div>
               </div>
               <div className="mb-6">
@@ -276,17 +276,17 @@ export default async function ImigrasiPolmanPage() {
                   Realisasi
                 </span>
                 <div className="text-3xl font-black text-primary-dark tracking-tight">
-                  {formatCurrency((data as any).anggaran.realisasi)}
+                  {formatCurrency(data.anggaran.realisasi)}
                 </div>
               </div>
               <div className="w-full bg-muted/30 rounded-full h-2 flex items-center mb-2 overflow-hidden">
                 <div
                   className="bg-secondary h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((data as any).anggaran.persentase, 100)}%` }}
+                  style={{ width: `${Math.min(data.anggaran.persentase, 100)}%` }}
                 />
               </div>
               <span className="text-sm font-semibold text-text/60">
-                Tingkat Serapan: {(data as any).anggaran.persentase}%
+                Tingkat Serapan: {data.anggaran.persentase}%
               </span>
             </div>
 
@@ -297,7 +297,7 @@ export default async function ImigrasiPolmanPage() {
                   Target PNBP
                 </span>
                 <div className="text-2xl font-black text-heading tracking-tight">
-                  {formatCurrency((data as any).pnbp?.target ?? 0)}
+                  {formatCurrency(data.pnbp?.target ?? 0)}
                 </div>
               </div>
               <div className="mb-6">
@@ -305,17 +305,17 @@ export default async function ImigrasiPolmanPage() {
                   Realisasi
                 </span>
                 <div className="text-3xl font-black text-success tracking-tight">
-                  {formatCurrency((data as any).pnbp?.realisasi ?? 0)}
+                  {formatCurrency(data.pnbp?.realisasi ?? 0)}
                 </div>
               </div>
               <div className="w-full bg-muted/30 rounded-full h-2 flex items-center mb-2 overflow-hidden">
                 <div
                   className="bg-success h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((data as any).pnbp?.persentase ?? 0, 100)}%` }}
+                  style={{ width: `${Math.min(data.pnbp?.persentase ?? 0, 100)}%` }}
                 />
               </div>
               <span className="text-sm font-semibold text-text/60">
-                Pencapaian: {(data as any).pnbp?.persentase ?? 0}%
+                Pencapaian: {data.pnbp?.persentase ?? 0}%
               </span>
             </div>
           </div>

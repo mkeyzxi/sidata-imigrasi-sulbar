@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link'
 
 export default function Footer() {
   return (
@@ -14,9 +14,8 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm opacity-90 leading-relaxed max-w-md">
-              Portal informasi dan data keimigrasian terintegrasi di wilayah
-              Sulawesi Barat yang menampilkan data dari Kanwil Sulbar, Imigrasi
-              Mamuju, dan Imigrasi Polman.
+              Portal informasi dan data keimigrasian terintegrasi di wilayah Sulawesi Barat yang
+              menampilkan data dari Kanwil Sulbar, Imigrasi Mamuju, dan Imigrasi Polman.
             </p>
           </div>
 
@@ -52,17 +51,26 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">Unit Kerja</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/kanwil-sulbar" className="opacity-90 hover:opacity-100 hover:underline">
+                <Link
+                  href="/kanwil-sulbar"
+                  className="opacity-90 hover:opacity-100 hover:underline"
+                >
                   Kanwil Sulbar
                 </Link>
               </li>
               <li>
-                <Link href="/imigrasi-mamuju" className="opacity-90 hover:opacity-100 hover:underline">
+                <Link
+                  href="/imigrasi-mamuju"
+                  className="opacity-90 hover:opacity-100 hover:underline"
+                >
                   Imigrasi Mamuju
                 </Link>
               </li>
               <li>
-                <Link href="/imigrasi-polman" className="opacity-90 hover:opacity-100 hover:underline">
+                <Link
+                  href="/imigrasi-polman"
+                  className="opacity-90 hover:opacity-100 hover:underline"
+                >
                   Imigrasi Polman
                 </Link>
               </li>
@@ -71,11 +79,9 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/20 mt-12 pt-8 text-sm opacity-80 text-center">
-          <p>
-            © {new Date().getFullYear()} SI DATA IMIGRASI SULBAR. Data Simulasi - Prototype.
-          </p>
+          <p>© {new Date().getFullYear()} SI DATA IMIGRASI SULBAR. Data Simulasi - Prototype.</p>
         </div>
       </div>
     </footer>
-  );
+  )
 }

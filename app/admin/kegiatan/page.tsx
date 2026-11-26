@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -14,6 +14,8 @@ import {
   Loader2,
   X,
   AlertCircle,
+  ImagePlus,
+  Upload,
 } from 'lucide-react'
 import {
   canManageUnit,
@@ -28,6 +30,9 @@ import {
   useConfirmDialog,
   ConfirmDialog,
 } from '@/components/admin/feedback'
+import { parseRawImageList } from '@/lib/supabase/image-url'
+
+const MAX_GALLERY_IMAGES = 3
 
 type Profile = {
   id: string
@@ -48,6 +53,8 @@ type Kegiatan = {
   location: string | null
   type: string | null
   image_url: string | null
+  /** Daftar path storage untuk galeri multi-gambar (dari kolom gallery JSONB) */
+  gallery?: string[] | null
   published: boolean
   created_by: string | null
   created_at: string | null
@@ -90,9 +97,14 @@ function AdminKegiatanContent() {
     location: '',
     type: 'Koordinasi',
     image_url: '',
+    /** Path storage untuk gambar yang sudah terupload (hasil /api/admin/kegiatan/upload) */
+    gallery: [] as string[],
     unit_id: '',
     published: true,
   })
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -180,17 +192,32 @@ function AdminKegiatanContent() {
 
   const canManageLocalUnit = (unitId: string) => canManageUnit(access, unitId)
 
+  // Bangun URL publik dari path storage untuk preview thumbnail
+  const galleryBase = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/+$/, '')
+  const resolveGalleryUrl = (p: string) => {
+    if (!p) return ''
+    if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('/')) return p
+    const clean = p.startsWith('kegiatan/') ? p : `kegiatan/${p}`
+    return galleryBase
+      ? `${galleryBase}/storage/v1/object/public/${clean}`
+      : clean
+  }
+
   const openModal = (k?: Kegiatan) => {
     setSavingError('')
+    setUploadError('')
     if (k) {
       setEditing(k)
+      // Gabungkan gambar lama dari image_url (mendukung JSON array) & gallery (maks 3)
+      const uniquePaths = parseRawImageList(k.image_url, k.gallery).slice(0, MAX_GALLERY_IMAGES)
       setFormData({
         title: k.title,
         description: k.description || '',
         date: k.date,
         location: k.location || '',
         type: k.type || 'Koordinasi',
-        image_url: k.image_url || '',
+        image_url: uniquePaths[0] || '',
+        gallery: uniquePaths,
         unit_id: k.unit_id,
         published: k.published,
       })
@@ -203,6 +230,7 @@ function AdminKegiatanContent() {
         location: '',
         type: 'Koordinasi',
         image_url: '',
+        gallery: [],
         unit_id: access.unit_slug || unitOptions[0]?.id || '',
         published: true,
       })
@@ -211,13 +239,105 @@ function AdminKegiatanContent() {
   }
 
   const validateForm = (): string => {
-    if (!formData.title.trim()) return 'Judu kegiatan wajib diisi'
+    if (!formData.title.trim()) return 'Judul kegiatan wajib diisi'
     if (!formData.date) return 'Tanggal wajib diisi'
     if (!formData.unit_id) return 'Pilih unit kerja'
     if (!canManageUnit(access, formData.unit_id)) {
       return 'Anda tidak berhak mengelola unit ini'
     }
+    if (formData.gallery.length > MAX_GALLERY_IMAGES) {
+      return `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan`
+    }
     return ''
+  }
+
+  /**
+   * Upload file gambar ke Supabase Storage via API server.
+   * File di-resize & dikonversi ke WebP oleh server (sharp), lalu
+   * di-upload ke bucket "kegiatan". Hasil: daftar path storage yang
+   * disimpan ke formData.gallery (maksimal 3 gambar per kegiatan).
+   */
+  const handleUploadFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return
+    setUploadError('')
+
+    const remaining = MAX_GALLERY_IMAGES - formData.gallery.length
+    if (remaining <= 0) {
+      const msg = `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan. Hapus salah satu gambar terlebih dahulu.`
+      setUploadError(msg)
+      push('error', msg)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    if (fileList.length > remaining) {
+      const msg = `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan. Anda hanya bisa menambahkan ${remaining} gambar lagi.`
+      setUploadError(msg)
+      push('error', msg)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    setUploading(true)
+
+    try {
+      const {data: {session}} = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const form = new FormData()
+      Array.from(fileList).forEach((f) => form.append('files[]', f))
+      if (formData.unit_id) form.append('unit_id', formData.unit_id)
+
+      const res = await fetch('/api/admin/kegiatan/upload', {
+        method: 'POST',
+        headers: token ? {Authorization: `Bearer ${token}`} : {},
+        body: form,
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal mengupload gambar.')
+      }
+
+      // Gabungkan path baru dengan yang sudah ada (maks 3 gambar)
+      const newPaths: string[] = json.paths || []
+      setFormData((prev) => {
+        const nextGallery = Array.from(new Set([...prev.gallery, ...newPaths])).slice(0, MAX_GALLERY_IMAGES)
+        const isFallback = prev.image_url.includes('unsplash.com') || prev.image_url === ''
+        const updatedImageUrl = (isFallback && nextGallery.length > 0) ? nextGallery[0] : prev.image_url
+
+        return {
+          ...prev,
+          image_url: updatedImageUrl,
+          gallery: nextGallery,
+        }
+      })
+
+      if (Array.isArray(json.errors) && json.errors.length > 0) {
+        push('error', `Beberapa gambar gagal: ${json.errors.join(', ')}`)
+      }
+      push('success', `${newPaths.length} gambar diunggah & diproses ke WebP`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal mengupload gambar'
+      setUploadError(msg)
+      push('error', msg)
+    } finally {
+      setUploading(false)
+      // Reset input file agar bisa pilih ulang file sama
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const removeGalleryItem = (index: number) => {
+    setFormData((prev) => {
+      const nextGallery = prev.gallery.filter((_, i) => i !== index)
+      // Jika item yang dihapus adalah gambar utama, angkat gambar pertama sisa
+      const nextImageUrl =
+        !prev.image_url || nextGallery.length === 0
+          ? ''
+          : prev.image_url === prev.gallery[index]
+            ? nextGallery[0]
+            : prev.image_url
+      return {...prev, gallery: nextGallery, image_url: nextImageUrl}
+    })
   }
 
   const refetch = async () => {
@@ -236,7 +356,7 @@ function AdminKegiatanContent() {
       // Fallback
     }
 
-    let query = supabase
+    const query = supabase
       .from('kegiatan')
       .select('*')
       .order('date', { ascending: false })
@@ -255,9 +375,24 @@ function AdminKegiatanContent() {
     setSaving(true)
     setSavingError('')
 
+    // Perbaikan Logika: Jika user upload gambar, prioritaskan gambar tersebut sebagai image_url
+    // kecuali user sengaja menginput URL manual (Unsplash/Lainnya).
+    let resolvedImageUrl = formData.image_url.trim()
+
+    // Jika URL mengandung 'unsplash.com' dan ada gambar baru di gallery, ganti dengan gallery[0]
+    const isUnsplashFallback = resolvedImageUrl.includes('unsplash.com')
+    if ((resolvedImageUrl === '' || isUnsplashFallback) && formData.gallery.length > 0) {
+      resolvedImageUrl = formData.gallery[0]
+    }
+
+    const cappedGallery = formData.gallery.slice(0, MAX_GALLERY_IMAGES)
     const payload = {
       ...formData,
-      ...(editing ? { id: editing.id } : {}),
+      gallery: cappedGallery,
+      // Jika unit adalah kanwil, paksa type menjadi 'Koordinasi' (standar kanwil)
+      type: formData.unit_id === 'kanwil-sulbar' ? 'Koordinasi' : formData.type,
+      image_url: resolvedImageUrl || cappedGallery[0] || null,
+      ...(editing ? {id: editing.id} : {}),
     }
 
     try {
@@ -419,56 +554,78 @@ function AdminKegiatanContent() {
 
         {/* Kegiatan List */}
         <div className="space-y-3">
-          {kegiatan.map((k) => (
-            <div
-              key={k.id}
-              className="bg-surface rounded-xl shadow-sm p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase">
-                    {getUnitName(k.unit_id)}
-                  </span>
-                  <span className="text-xs text-text/50">{k.type}</span>
-                </div>
-                <h3 className="font-bold text-heading text-lg">{k.title}</h3>
-                <div className="flex items-center gap-4 text-sm text-text/60 mt-1">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {k.date}
-                  </span>
-                  {k.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {k.location}
-                    </span>
+          {kegiatan.map((k) => {
+            const thumbPaths = parseRawImageList(k.image_url, k.gallery).slice(0, MAX_GALLERY_IMAGES)
+            return (
+              <div
+                key={k.id}
+                className="bg-surface rounded-xl shadow-sm p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  {thumbPaths.length > 0 && (
+                    <div className="relative w-20 h-14 rounded-lg overflow-hidden bg-muted shrink-0">
+                      <img
+                        src={resolveGalleryUrl(thumbPaths[0])}
+                        alt={k.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {thumbPaths.length > 1 && (
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/75 text-white text-[9px] font-bold">
+                          +{thumbPaths.length - 1}
+                        </span>
+                      )}
+                    </div>
                   )}
-                  {!k.published && (
-                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
-                      Draf
-                    </span>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase">
+                        {getUnitName(k.unit_id)}
+                      </span>
+                      <span className="text-xs text-text/50">{k.type}</span>
+                      {thumbPaths.length > 0 && (
+                        <span className="text-xs text-text/50">· {thumbPaths.length} foto</span>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-heading text-lg">{k.title}</h3>
+                    <div className="flex items-center gap-4 text-sm text-text/60 mt-1">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {k.date}
+                      </span>
+                      {k.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {k.location}
+                        </span>
+                      )}
+                      {!k.published && (
+                        <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                          Draf
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {canManageLocalUnit(k.unit_id) && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openModal(k)}
-                    className="p-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => askDelete(k)}
-                    className="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                {canManageLocalUnit(k.unit_id) && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openModal(k)}
+                      className="p-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => askDelete(k)}
+                      className="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* Modal */}
@@ -567,20 +724,22 @@ function AdminKegiatanContent() {
                         className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-heading mb-1.5">
-                        Jenis
-                      </label>
-                      <select
-                        value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
-                      >
-                        <option value="Koordinasi">Koordinasi</option>
-                        <option value="Intel-WAS">Intel-WAS</option>
-                        <option value="Pelayanan">Pelayanan</option>
-                      </select>
-                    </div>
+                    {formData.unit_id !== 'kanwil-sulbar' && (
+                      <div>
+                        <label className="block text-sm font-semibold text-heading mb-1.5">
+                          Jenis
+                        </label>
+                        <select
+                          value={formData.type}
+                          onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
+                        >
+                          <option value="Koordinasi">Koordinasi</option>
+                          <option value="Intel-WAS">Intel-WAS</option>
+                          <option value="Pelayanan">Pelayanan</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -598,15 +757,103 @@ function AdminKegiatanContent() {
 
                   <div>
                     <label className="block text-sm font-semibold text-heading mb-1.5">
-                      URL Gambar
+                      URL Gambar (opsional)
                     </label>
                     <input
                       type="url"
                       value={formData.image_url}
                       onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                       className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
-                      placeholder="https://..."
+                      placeholder="https://... (atau upload gambar di bawah)"
                     />
+                  </div>
+
+                  {/* Upload gambar (resize + konversi WebP di server) */}
+                  <div>
+                    <label className="block text-sm font-semibold text-heading mb-1.5">
+                      Galeri Gambar <span className="font-normal text-text/40">(maks {MAX_GALLERY_IMAGES}, auto WebP)</span>
+                    </label>
+
+                    <label
+                      className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 transition-colors ${
+                        formData.gallery.length >= MAX_GALLERY_IMAGES
+                          ? 'border-border/50 bg-muted/30 cursor-not-allowed opacity-70'
+                          : 'border-border cursor-pointer hover:border-accent/60 hover:bg-accent/5'
+                      }`}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={formData.gallery.length >= MAX_GALLERY_IMAGES || uploading}
+                        onChange={(e) => handleUploadFiles(e.target.files)}
+                        className="hidden"
+                      />
+                      {uploading ? (
+                        <>
+                          <Upload className="w-6 h-6 text-accent animate-pulse" />
+                          <span className="text-xs font-bold text-heading">
+                            Memproses & mengupload gambar...
+                          </span>
+                        </>
+                      ) : formData.gallery.length >= MAX_GALLERY_IMAGES ? (
+                        <>
+                          <ImagePlus className="w-6 h-6 text-text/30" />
+                          <span className="text-xs font-bold text-heading">
+                            Batas maksimal {MAX_GALLERY_IMAGES} gambar tercapai ({formData.gallery.length}/{MAX_GALLERY_IMAGES})
+                          </span>
+                          <span className="text-[11px] text-text/40">
+                            Hapus salah satu gambar di bawah jika ingin mengganti
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <ImagePlus className="w-6 h-6 text-text/40" />
+                          <span className="text-xs font-bold text-heading">
+                            Pilih & upload 1–{MAX_GALLERY_IMAGES} gambar ({formData.gallery.length}/{MAX_GALLERY_IMAGES})
+                          </span>
+                          <span className="text-[11px] text-text/40">
+                            Otomatis di-resize (lebar 1600px) & dikonversi ke WebP
+                          </span>
+                        </>
+                      )}
+                    </label>
+
+                    {uploadError && (
+                      <p className="mt-2 text-xs font-medium text-red-600">{uploadError}</p>
+                    )}
+
+                    {/* Thumbnail galeri */}
+                    {formData.gallery.length > 0 && (
+                      <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {formData.gallery.map((path, i) => (
+                          <div
+                            key={`${path}-${i}`}
+                            className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted group"
+                          >
+                            <img
+                              src={resolveGalleryUrl(path)}
+                              alt={`Galeri ${i + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            {i === 0 && (
+                              <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-accent text-white text-[9px] font-black uppercase">
+                                Utama
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeGalleryItem(i)}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+                              aria-label="Hapus gambar"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <label className="flex items-center gap-3">
