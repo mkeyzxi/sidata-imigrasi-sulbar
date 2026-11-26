@@ -1,4 +1,4 @@
-// Data dummy untuk Polman
+// Data terupdate dari "data imigrasi" - Periode Januari s.d 24 November 2026
 export const polmanPassportData = {
   total: 2235,
   year: 2026,
@@ -13,6 +13,24 @@ export const polmanIzinTinggal = {
   itk: 21,
   itap: 8,
   itas: 37
+};
+
+export const polmanAnggaran = {
+  pagu: 10742707000, // Rp 10.742.707.000
+  realisasi: 7765276808, // Rp 7.765.276.808
+  persentase: 72.28,
+  sisa: 2977430192,
+  breakdown: {
+    pegawai: { pagu: 4939094000, realisasi: 4148943119, persentase: 84.0 },
+    barang: { pagu: 5363613000, realisasi: 3185242989, persentase: 59.39 },
+    modal: { pagu: 440000000, realisasi: 431090700, persentase: 97.98 }
+  }
+};
+
+export const polmanPNBP = {
+  target: 3190726160, // Rp 3.190.726.160
+  realisasi: 5883600000, // Rp 5.883.600.000
+  persentase: 184.4
 };
 
 export const polmanKegiatan = [

@@ -6,6 +6,7 @@ import {
   mamujuTAK as defaultMamujuTAK,
   mamujuBAP as defaultMamujuBAP,
   mamujuIntelWas as defaultMamujuIntelWas,
+  mamujuPerlintasan as defaultMamujuPerlintasan,
   mamujuKegiatan as defaultMamujuKegiatan,
   mamujuSerapanBulanan as defaultMamujuSerapan,
   mamujuAnggaran as defaultMamujuAnggaran,
@@ -14,6 +15,8 @@ import {
 import {
   polmanPassportData as defaultPolmanPassport,
   polmanIzinTinggal as defaultPolmanIzinTinggal,
+  polmanAnggaran as defaultPolmanAnggaran,
+  polmanPNBP as defaultPolmanPNBP,
   polmanKegiatan as defaultPolmanKegiatan,
   polmanSerapanBulanan as defaultPolmanSerapan,
 } from '@/lib/data/polman'
@@ -22,6 +25,7 @@ import {
   kanwilKegiatan as defaultKanwilKegiatan,
   kanwilSerapanBidang as defaultKanwilSerapan,
 } from '@/lib/data/kanwil'
+import {daftarKegiatanStatis, KegiatanStatis} from '@/lib/data/kegiatan'
 
 const UNIT_NAME_MAP: Record<string, string> = {
   'kanwil-sulbar': 'Kanwil Sulbar',
@@ -29,28 +33,44 @@ const UNIT_NAME_MAP: Record<string, string> = {
   'imigrasi-polman': 'Imigrasi Polman',
 }
 
-export type KegiatanItem = {
-  id: string | number
-  title: string
-  date: string
-  location?: string
-  type?: string
-  description?: string
-  image?: string
-  unit: string
-  unit_id: string
+export type KegiatanItem = Omit<KegiatanStatis, 'source'> & {
   bidang?: string
   bidang_id?: string
+  /** Penanda sumber data: 'statis' (bawaan) atau 'supabase' */
+  source?: 'statis' | 'supabase'
 }
 
 /**
- * Mengambil daftar berita & kegiatan publik yang terbit dari Supabase
+ * Data statis bawaan (koordinasi BKN 17 November 2026) —
+ * selalu tampil sebagai bagian dari daftar kegiatan tanpa perlu
+ * menunggu database.
+ */
+const kegiatanStatis: KegiatanItem[] = daftarKegiatanStatis.map((b) => ({
+  id: b.id,
+  title: b.title,
+  date: b.date,
+  location: b.location,
+  type: b.type,
+  description: b.description,
+  image: b.image,
+  gallery: b.gallery,
+  unit: b.unit,
+  unit_id: b.unit_id,
+  source: 'statis',
+}))
+
+/**
+ * Mengambil daftar berita & kegiatan publik yang terbit dari Supabase.
+ * Daftar kegiatan statis (bawaan) selalu disertakan di awal; data Supabase
+ * akan melanjutkan/melanjutkan daftar tersebut.
  */
 export async function getKegiatanList(options?: {
   unit_id?: string
   bidang_id?: string
   limit?: number
 }): Promise<KegiatanItem[]> {
+  let supabaseData: KegiatanItem[] = []
+
   try {
     const supabase = createSupabaseServerClient()
     let query = supabase
@@ -72,7 +92,7 @@ export async function getKegiatanList(options?: {
     const {data, error} = await query
 
     if (!error && data && data.length > 0) {
-      return data.map((item) => ({
+      supabaseData = data.map((item) => ({
         id: item.id,
         title: item.title,
         date: item.date,
@@ -86,35 +106,27 @@ export async function getKegiatanList(options?: {
         unit_id: item.unit_id,
         bidang: item.bidang?.name || undefined,
         bidang_id: item.bidang_id || undefined,
+        source: 'supabase' as const,
       }))
     }
   } catch (err) {
     console.warn('[data-service] Gagal memuat kegiatan dari Supabase, menggunakan fallback:', err)
   }
 
-  // Fallback
-  const allDefault: KegiatanItem[] = [
-    ...defaultKanwilKegiatan.map((k) => ({...k, unit: 'Kanwil Sulbar', unit_id: 'kanwil-sulbar'})),
-    ...defaultMamujuKegiatan.map((k) => ({
-      ...k,
-      unit: 'Imigrasi Mamuju',
-      unit_id: 'imigrasi-mamuju',
-    })),
-    ...defaultPolmanKegiatan.map((k) => ({
-      ...k,
-      unit: 'Imigrasi Polman',
-      unit_id: 'imigrasi-polman',
-    })),
-  ]
-
-  let filtered = allDefault
+  // Gabungan: statis (bawaan) + Supabase. Jika ada filter unit, terapkan
+  // juga ke data statis agar konsisten.
+  let combined: KegiatanItem[]
   if (options?.unit_id && options.unit_id !== 'all') {
-    filtered = filtered.filter((k) => k.unit_id === options.unit_id)
+    combined = [...kegiatanStatis, ...supabaseData].filter((k) => k.unit_id === options.unit_id)
+  } else {
+    combined = [...kegiatanStatis, ...supabaseData]
   }
+
   if (options?.bidang_id) {
-    filtered = filtered.filter((k) => k.bidang_id === options.bidang_id)
+    combined = combined.filter((k) => k.bidang_id === options.bidang_id)
   }
-  return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  return combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 }
 
 /**
@@ -124,7 +136,11 @@ export async function getKegiatanDetail(id: number | string) {
   const supabase = createSupabaseServerClient()
   let item = null
 
-  // 1. Coba dari Supabase (hanya jika terbit)
+  // 1. Coba cari di data statis bawaan (berita koordinasi BKN dkk)
+  const foundStatis = kegiatanStatis.find((k) => String(k.id) === String(id))
+  if (foundStatis) return {...foundStatis, published: true}
+
+  // 2. Coba dari Supabase (hanya jika terbit)
   const {data, error} = await supabase
     .from('kegiatan')
     .select('*, bidang:bidang(name)')
@@ -136,9 +152,9 @@ export async function getKegiatanDetail(id: number | string) {
     item = data
   }
 
-  // Fallback ke data default bila tidak ada di DB
+  // Fallback ke data default legacy (lib/data/*) bila tidak ada di DB
   if (!item) {
-    const allDefault: KegiatanItem[] = [
+    const allDefault = [
       ...defaultKanwilKegiatan.map((k) => ({
         ...k,
         unit: 'Kanwil Sulbar',
@@ -155,7 +171,9 @@ export async function getKegiatanDetail(id: number | string) {
         unit_id: 'imigrasi-polman',
       })),
     ]
-    const found = allDefault.find((k) => String(k.id) === String(id))
+    const found = allDefault.find((k: Record<string, unknown>) => String(k.id) === String(id)) as
+      | (KegiatanItem & Record<string, unknown>)
+      | undefined
     if (!found) return null
     return {
       id: found.id,
@@ -297,7 +315,11 @@ export async function getMamujuData(year: number = 2026) {
         return found ? Number(found.nilai) : fb
       }
 
+      // PASPOR - Struktur baru: Biasa + Elektronik
       const totalPaspor = getVal('paspor', 'Total Paspor', defaultMamujuPassport.total)
+      const pasporBiasa = getVal('paspor', 'Paspor Biasa 48 Halaman', 0)
+      const pasporElektronik = getVal('paspor', 'Paspor Elektronik 48 Halaman', 0)
+      // Fallback ke struktur lama jika data baru tidak ada
       const baru = getVal('paspor', 'Baru', defaultMamujuPassport.breakdown.baru.total)
       const baruPercepatan = getVal(
         'paspor',
@@ -330,13 +352,44 @@ export async function getMamujuData(year: number = 2026) {
         defaultMamujuPassport.breakdown.gantiMasihBerlakuPercepatan.total,
       )
 
+      // IZIN TINGGAL
       const itk = getVal('izin_tinggal', 'ITK', defaultMamujuIzinTinggal.itk)
       const itas = getVal('izin_tinggal', 'ITAS', defaultMamujuIzinTinggal.itas)
       const itap = getVal('izin_tinggal', 'ITAP', defaultMamujuIzinTinggal.itap)
-      const totalIzinTinggal = itk + itas + itap
+      const totalIzinTinggal = getVal('izin_tinggal', 'Total Izin Tinggal', defaultMamujuIzinTinggal.total)
 
+      // WNA
       const totalWna = getVal('WNA', 'Total WNA', defaultMamujuWNA.total)
+
+      // TAK - Struktur baru
       const totalTak = getVal('TAK', 'Total TAK', defaultMamujuTAK.total)
+
+      // BAP - Struktur baru: Hilang + Rusak
+      const bapHilang = getVal('BAP', 'BAP Hilang', 0)
+      const bapRusak = getVal('BAP', 'BAP Rusak', 0)
+      const totalBap = getVal('BAP', 'Total BAP', defaultMamujuBAP.wni + defaultMamujuBAP.wna)
+
+      // INTEL-WAS - Struktur baru
+      const totalIntelWas = getVal('intel_was', 'Total Kegiatan Intel-WAS', defaultMamujuIntelWas.total)
+      const opsIntelijen = getVal('intel_was', 'Operasi Intelijen', defaultMamujuIntelWas.breakdown.operasiIntelijen.kegiatan)
+      const opsMandiri = getVal('intel_was', 'Operasi Mandiri/Pengawasan', defaultMamujuIntelWas.breakdown.operasiMandiri.kegiatan)
+      const patroli = getVal('intel_was', 'Patroli Pengawasan Orang Asing', defaultMamujuIntelWas.breakdown.patroli.kegiatan)
+      const opsGabungan = getVal('intel_was', 'Operasi Gabungan', defaultMamujuIntelWas.breakdown.opGabungan.kegiatan)
+      const timpora = getVal('intel_was', 'Rapat Timpora', 0)
+      const desaBinaan = getVal('intel_was', 'Desa Binaan', 0)
+
+      // PERLINTASAN (Kategori baru)
+      const perlintasanKedatangan = getVal('perlintasan', 'Kedatangan', 0)
+      const perlintasanKeberangkatan = getVal('perlintasan', 'Keberangkatan', 0)
+      const totalPerlintasan = getVal('perlintasan', 'Total Perlintasan', 0)
+
+      // ANGGARAN
+      const paguAnggaran = getVal('anggaran', 'Pagu Anggaran', defaultMamujuAnggaran.pagu)
+      const realisasiAnggaran = getVal('anggaran', 'Realisasi Anggaran', defaultMamujuAnggaran.realisasi)
+
+      // PNBP
+      const targetPNBP = getVal('pnbp', 'Target PNBP', defaultMamujuPNBP.target)
+      const realisasiPNBP = getVal('pnbp', 'Realisasi PNBP', defaultMamujuPNBP.realisasi)
 
       return {
         passportData: {
@@ -362,6 +415,9 @@ export async function getMamujuData(year: number = 2026) {
               ...defaultMamujuPassport.breakdown.gantiMasihBerlakuPercepatan,
               total: gantiMasihBerlakuPercepatan,
             },
+            // New fields
+            pasporBiasa: { total: pasporBiasa },
+            pasporElektronik: { total: pasporElektronik },
           },
         },
         izinTinggal: {
@@ -372,10 +428,40 @@ export async function getMamujuData(year: number = 2026) {
         },
         wna: {...defaultMamujuWNA, total: totalWna},
         tak: {...defaultMamujuTAK, total: totalTak},
-        bap: defaultMamujuBAP,
-        intelWas: defaultMamujuIntelWas,
-        anggaran: defaultMamujuAnggaran,
-        pnbp: defaultMamujuPNBP,
+        bap: {
+          wni: totalBap - bapRusak, // WNI = Total - Rusak
+          wna: 0,
+          total: totalBap,
+          hilang: bapHilang,
+          rusak: bapRusak,
+        },
+        intelWas: {
+          total: totalIntelWas,
+          totalPetugas: defaultMamujuIntelWas.totalPetugas,
+          breakdown: {
+            operasiIntelijen: {kegiatan: opsIntelijen, petugas: defaultMamujuIntelWas.breakdown.operasiIntelijen.petugas},
+            operasiMandiri: {kegiatan: opsMandiri, petugas: defaultMamujuIntelWas.breakdown.operasiMandiri.petugas},
+            patroli: {kegiatan: patroli, petugas: defaultMamujuIntelWas.breakdown.patroli.petugas},
+            opGabungan: {kegiatan: opsGabungan, petugas: defaultMamujuIntelWas.breakdown.opGabungan.petugas},
+            rapatTimpora: {kegiatan: timpora, petugas: defaultMamujuIntelWas.breakdown.rapatTimpora.petugas},
+            desaBinaan: {kegiatan: desaBinaan, petugas: defaultMamujuIntelWas.breakdown.desaBinaan.petugas},
+          },
+        },
+        perlintasan: {
+          total: totalPerlintasan,
+          kedatangan: perlintasanKedatangan,
+          keberangkatan: perlintasanKeberangkatan,
+        },
+        anggaran: {
+          pagu: paguAnggaran,
+          realisasi: realisasiAnggaran,
+          persentase: realisasiAnggaran > 0 ? Math.round((realisasiAnggaran / paguAnggaran) * 10000) / 100 : 0,
+        },
+        pnbp: {
+          target: targetPNBP,
+          realisasi: realisasiPNBP,
+          persentase: realisasiPNBP > 0 ? Math.round((realisasiPNBP / targetPNBP) * 10000) / 100 : 0,
+        },
         serapanBulanan: defaultMamujuSerapan,
       }
     }
@@ -390,6 +476,7 @@ export async function getMamujuData(year: number = 2026) {
     tak: defaultMamujuTAK,
     bap: defaultMamujuBAP,
     intelWas: defaultMamujuIntelWas,
+    perlintasan: defaultMamujuPerlintasan,
     anggaran: defaultMamujuAnggaran,
     pnbp: defaultMamujuPNBP,
     serapanBulanan: defaultMamujuSerapan,
@@ -417,17 +504,31 @@ export async function getPolmanData(year: number = 2026) {
       }
 
       const totalPaspor = getVal('paspor', 'Total Paspor', defaultPolmanPassport.total)
-      const baru = getVal('paspor', 'Baru', defaultPolmanPassport.breakdown.baru)
+      const baru = getVal('paspor', 'Paspor Baru', defaultPolmanPassport.breakdown.baru)
       const penggantian = getVal(
         'paspor',
-        'Penggantian',
+        'Paspor Penggantian',
         defaultPolmanPassport.breakdown.penggantian,
       )
 
       const itk = getVal('izin_tinggal', 'ITK', defaultPolmanIzinTinggal.itk)
       const itas = getVal('izin_tinggal', 'ITAS', defaultPolmanIzinTinggal.itas)
       const itap = getVal('izin_tinggal', 'ITAP', defaultPolmanIzinTinggal.itap)
-      const totalIzinTinggal = itk + itas + itap
+      const totalIzinTinggal = getVal('izin_tinggal', 'Total Izin Tinggal', defaultPolmanIzinTinggal.total)
+
+      // ANGGARAN - Struktur baru dengan breakdown per jenis
+      const paguAnggaran = getVal('anggaran', 'Pagu Anggaran', 0)
+      const realisasiAnggaran = getVal('anggaran', 'Realisasi Anggaran', 0)
+      const paguPegawai = getVal('anggaran', 'Pagu Pegawai', 0)
+      const realisasiPegawai = getVal('anggaran', 'Realisasi Pegawai', 0)
+      const paguBarang = getVal('anggaran', 'Pagu Barang', 0)
+      const realisasiBarang = getVal('anggaran', 'Realisasi Barang', 0)
+      const paguModal = getVal('anggaran', 'Pagu Modal', 0)
+      const realisasiModal = getVal('anggaran', 'Realisasi Modal', 0)
+
+      // PNBP
+      const targetPNBP = getVal('pnbp', 'Target PNBP', 0)
+      const realisasiPNBP = getVal('pnbp', 'Realisasi PNBP', 0)
 
       return {
         passportData: {
@@ -444,6 +545,21 @@ export async function getPolmanData(year: number = 2026) {
           itap,
           itas,
         },
+        anggaran: {
+          pagu: paguAnggaran,
+          realisasi: realisasiAnggaran,
+          persentase: paguAnggaran > 0 ? Math.round((realisasiAnggaran / paguAnggaran) * 10000) / 100 : 0,
+          breakdown: {
+            pegawai: {pagu: paguPegawai, realisasi: realisasiPegawai},
+            barang: {pagu: paguBarang, realisasi: realisasiBarang},
+            modal: {pagu: paguModal, realisasi: realisasiModal},
+          },
+        },
+        pnbp: {
+          target: targetPNBP,
+          realisasi: realisasiPNBP,
+          persentase: targetPNBP > 0 ? Math.round((realisasiPNBP / targetPNBP) * 10000) / 100 : 0,
+        },
         serapanBulanan: defaultPolmanSerapan,
       }
     }
@@ -454,6 +570,8 @@ export async function getPolmanData(year: number = 2026) {
   return {
     passportData: defaultPolmanPassport,
     izinTinggal: defaultPolmanIzinTinggal,
+    anggaran: defaultPolmanAnggaran,
+    pnbp: defaultPolmanPNBP,
     serapanBulanan: defaultPolmanSerapan,
   }
 }

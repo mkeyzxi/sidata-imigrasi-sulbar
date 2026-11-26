@@ -67,7 +67,7 @@ async function verifyAuth(req: Request): Promise<AuthGate> {
   return {service, profile}
 }
 
-// GET: Ambil daftar kegiatan
+// GET: Ambil daftar kegiatan (dengan batas unit untuk admin biasa)
 export async function GET(req: Request) {
   const gate = await verifyAuth(req)
   if ('error' in gate) {
@@ -75,9 +75,14 @@ export async function GET(req: Request) {
   }
 
   const {searchParams} = new URL(req.url)
-  const unitFilter = searchParams.get('unit_id')
 
-  let query = gate.service.from('kegiatan').select('*').order('date', {ascending: false})
+  // ?scope=all -> semua unit (hanya superadmin; default tetap sesuai peran)
+  const scope = searchParams.get('scope')
+
+  let query = gate.service
+    .from('kegiatan')
+    .select('*')
+    .order('date', {ascending: false})
 
   // Jika bukan superadmin, paksa query hanya untuk unit yang dimiliki
   if (gate.profile.role !== 'superadmin') {
@@ -86,8 +91,12 @@ export async function GET(req: Request) {
       return NextResponse.json({kegiatan: []})
     }
     query = query.eq('unit_id', userUnit)
-  } else if (unitFilter && unitFilter !== 'all') {
-    query = query.eq('unit_id', unitFilter)
+  } else if (scope !== 'all') {
+    // Superadmin: tetap boleh filter per unit bila diminta
+    const unitFilter = searchParams.get('unit_id')
+    if (unitFilter && unitFilter !== 'all') {
+      query = query.eq('unit_id', unitFilter)
+    }
   }
 
   const {data, error} = await query

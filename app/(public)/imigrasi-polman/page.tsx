@@ -71,7 +71,7 @@ export default async function ImigrasiPolmanPage() {
         {/* Foto Gedung - Floating Modern Card */}
         <div className="lg:w-1/2 relative h-[320px] md:h-[420px] w-full bg-surface overflow-hidden rounded-3xl shadow-xl transition-all duration-500 hover:shadow-2xl">
           <Image
-            src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&q=80"
+            src="/hero-image/kanwil-polman.webp"
             alt="Gedung Kantor Imigrasi Polman"
             fill
             className="object-cover transition-transform duration-700 hover:scale-105"
@@ -252,11 +252,74 @@ export default async function ImigrasiPolmanPage() {
             <Coins className="w-3.5 h-3.5" />
             Pengelolaan Keuangan
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-heading tracking-tight">Serapan Anggaran 2026</h2>
+          <h2 className="text-2xl sm:text-3xl font-black text-heading tracking-tight">Anggaran & PNBP 2026</h2>
           <p className="text-text/70 mt-2 text-base sm:text-lg">
-            Laporan realisasi anggaran bulanan Kantor Imigrasi Polman.
+            Laporan realisasi anggaran dan PNBP Kantor Imigrasi Polman per Januari s.d Oktober 2026.
           </p>
         </div>
+
+        {/* Ringkasan Anggaran & PNBP */}
+        {(data as any).anggaran && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div className="bg-surface p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-extrabold text-lg text-heading mb-6">Realisasi Anggaran</h3>
+              <div className="mb-4">
+                <span className="text-sm font-bold uppercase tracking-widest text-text/50 block mb-1">
+                  Pagu Anggaran
+                </span>
+                <div className="text-2xl font-black text-heading tracking-tight">
+                  {formatCurrency((data as any).anggaran.pagu)}
+                </div>
+              </div>
+              <div className="mb-6">
+                <span className="text-sm font-bold uppercase tracking-widest text-text/50 block mb-1">
+                  Realisasi
+                </span>
+                <div className="text-3xl font-black text-primary-dark tracking-tight">
+                  {formatCurrency((data as any).anggaran.realisasi)}
+                </div>
+              </div>
+              <div className="w-full bg-muted/30 rounded-full h-2 flex items-center mb-2 overflow-hidden">
+                <div
+                  className="bg-secondary h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min((data as any).anggaran.persentase, 100)}%` }}
+                />
+              </div>
+              <span className="text-sm font-semibold text-text/60">
+                Tingkat Serapan: {(data as any).anggaran.persentase}%
+              </span>
+            </div>
+
+            <div className="bg-surface p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-extrabold text-lg text-heading mb-6">Realisasi PNBP</h3>
+              <div className="mb-4">
+                <span className="text-sm font-bold uppercase tracking-widest text-text/50 block mb-1">
+                  Target PNBP
+                </span>
+                <div className="text-2xl font-black text-heading tracking-tight">
+                  {formatCurrency((data as any).pnbp?.target ?? 0)}
+                </div>
+              </div>
+              <div className="mb-6">
+                <span className="text-sm font-bold uppercase tracking-widest text-text/50 block mb-1">
+                  Realisasi
+                </span>
+                <div className="text-3xl font-black text-success tracking-tight">
+                  {formatCurrency((data as any).pnbp?.realisasi ?? 0)}
+                </div>
+              </div>
+              <div className="w-full bg-muted/30 rounded-full h-2 flex items-center mb-2 overflow-hidden">
+                <div
+                  className="bg-success h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min((data as any).pnbp?.persentase ?? 0, 100)}%` }}
+                />
+              </div>
+              <span className="text-sm font-semibold text-text/60">
+                Pencapaian: {(data as any).pnbp?.persentase ?? 0}%
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Serapan Bulanan Table */}
         <div className="bg-surface rounded-2xl shadow-sm p-6 md:p-8">

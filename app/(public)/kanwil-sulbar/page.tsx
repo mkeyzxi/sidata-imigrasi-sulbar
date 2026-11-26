@@ -14,10 +14,12 @@ export default async function KanwilSulbarPage() {
   const totalKegiatan = kanwilKegiatan.length
   const totalBidang = kanwilBidang.length
 
-  // Mengambil total serapan dari data Supabase dengan aman
-  const totalAnggaranTerserap = kanwilSerapanBidang['bidang-1']
-    ? kanwilSerapanBidang['bidang-1'].reduce((sum, item) => sum + item.jumlah, 0)
-    : 0
+  // Total serapan = akumulasi dari SEMUA bidang (bukan hanya satu)
+  const totalAnggaranTerserap = Object.values(kanwilSerapanBidang).reduce(
+    (grandSum, daftarBulanan) =>
+      grandSum + (daftarBulanan || []).reduce((sum, item) => sum + item.jumlah, 0),
+    0,
+  )
 
   return (
     <main className="min-h-screen bg-background text-text pb-28 selection:bg-accent selection:text-white">
@@ -53,7 +55,7 @@ export default async function KanwilSulbarPage() {
         {/* Foto Gedung - Seamless Elevated Card */}
         <div className="lg:w-1/2 relative h-[320px] sm:h-[400px] w-full bg-surface rounded-2xl overflow-hidden shadow-md group">
           <Image
-            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80"
+            src="/hero-image/kanwil-sulbar.webp"
             alt="Gedung Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat"
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-105"

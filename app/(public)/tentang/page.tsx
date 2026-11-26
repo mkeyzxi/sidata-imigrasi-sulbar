@@ -136,7 +136,7 @@ export default function TentangPage() {
           </section>
 
           {/* Notice Box */}
-          <section className="pt-4">
+          {/* <section className="pt-4">
             <div className="flex items-start gap-4 p-6 sm:p-7 bg-accent/10 rounded-2xl text-heading shadow-xs">
               <div className="w-9 h-9 rounded-xl bg-accent/20 flex items-center justify-center text-accent shrink-0 mt-0.5">
                 <Info className="w-5 h-5" />
@@ -152,7 +152,7 @@ export default function TentangPage() {
                 </p>
               </div>
             </div>
-          </section>
+          </section> */}
         </div>
       </div>
     </main>

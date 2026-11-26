@@ -88,7 +88,7 @@ function AdminKegiatanContent() {
     description: '',
     date: new Date().toISOString().split('T')[0],
     location: '',
-    type: 'Intel-WAS',
+    type: 'Koordinasi',
     image_url: '',
     unit_id: '',
     published: true,
@@ -132,13 +132,13 @@ function AdminKegiatanContent() {
 
       const localAccess = effectiveAccess(resolved)
 
-      // Ambil daftar kegiatan via API admin
+      // Ambil daftar kegiatan via API admin (semua unit agar seluruh data
+      // yang akan tampil di halaman /kegiatan dapat dikelola & dipantau)
       try {
         const token = session.access_token
-        const res = await fetch(
-          `/api/admin/kegiatan${localAccess.role !== 'superadmin' && localAccess.unit_slug ? `?unit_id=${localAccess.unit_slug}` : ''}`,
-          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-        )
+        const res = await fetch('/api/admin/kegiatan?scope=all', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (res.ok) {
           const json = await res.json()
           setKegiatan(json.kegiatan || [])
@@ -155,6 +155,7 @@ function AdminKegiatanContent() {
         .order('date', { ascending: false })
 
       if (localAccess.role !== 'superadmin' && localAccess.unit_slug) {
+        // Viewer/unit admin yang API-nya belum tersedia: tetap batasi sesuai unit
         query = query.eq('unit_id', localAccess.unit_slug)
       }
 
@@ -188,7 +189,7 @@ function AdminKegiatanContent() {
         description: k.description || '',
         date: k.date,
         location: k.location || '',
-        type: k.type || 'Intel-WAS',
+        type: k.type || 'Koordinasi',
         image_url: k.image_url || '',
         unit_id: k.unit_id,
         published: k.published,
@@ -200,7 +201,7 @@ function AdminKegiatanContent() {
         description: '',
         date: new Date().toISOString().split('T')[0],
         location: '',
-        type: 'Intel-WAS',
+        type: 'Koordinasi',
         image_url: '',
         unit_id: access.unit_slug || unitOptions[0]?.id || '',
         published: true,
@@ -223,10 +224,9 @@ function AdminKegiatanContent() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      const res = await fetch(
-        `/api/admin/kegiatan${access.role !== 'superadmin' && access.unit_slug ? `?unit_id=${access.unit_slug}` : ''}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-      )
+      const res = await fetch('/api/admin/kegiatan?scope=all', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (res.ok) {
         const json = await res.json()
         setKegiatan(json.kegiatan || [])
@@ -240,9 +240,8 @@ function AdminKegiatanContent() {
       .from('kegiatan')
       .select('*')
       .order('date', { ascending: false })
-    if (access.role !== 'superadmin' && access.unit_slug) {
-      query = query.eq('unit_id', access.unit_slug)
-    }
+    // Fallback langsung ke Supabase: RLS membatasi admin unit hanya pada
+    // unitnya sendiri (lihat migrations 006), sehingga tetap aman.
     const { data } = await query
     setKegiatan(data || [])
   }
@@ -392,13 +391,18 @@ function AdminKegiatanContent() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-primary-dark tracking-tight">
-              Kelola Berita & Kegiatan
+              Kelola Kegiatan
             </h1>
             <p className="text-text/70 mt-1">
               {kegiatan.length} kegiatan tercatat
               {user
                 ? ` · ${roleLabel(access.role)}${access.unit_slug ? ' · ' + (UNIT_SLUG_MAP[access.unit_slug]?.label ?? access.unit_slug) : ''}`
                 : ''}
+            </p>
+            <p className="text-xs text-text/50 mt-2 max-w-xl">
+              Kegiatan yang ditambahkan akan tersimpan ke Supabase dan otomatis
+              muncul di menu <span className="text-accent font-bold">Kegiatan</span>
+              (melanjutkan daftar kegiatan statis bawaan).
             </p>
           </div>
 
@@ -572,8 +576,8 @@ function AdminKegiatanContent() {
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                         className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       >
-                        <option value="Intel-WAS">Intel-WAS</option>
                         <option value="Koordinasi">Koordinasi</option>
+                        <option value="Intel-WAS">Intel-WAS</option>
                         <option value="Pelayanan">Pelayanan</option>
                       </select>
                     </div>

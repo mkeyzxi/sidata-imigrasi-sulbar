@@ -13,6 +13,7 @@ import {
   Shield,
   Menu,
   ChevronRight,
+  Coins,
 } from 'lucide-react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { roleLabel, UNIT_SLUG_MAP } from '@/lib/utils/access'
@@ -30,10 +31,13 @@ const navItems: Array<{
   label: string
   icon: typeof LayoutDashboard
   superadminOnly?: boolean
+  kanwilOnly?: boolean
 }> = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/kegiatan', label: 'Berita & Kegiatan', icon: FileEdit },
+  { href: '/admin/kegiatan', label: 'Kegiatan', icon: FileEdit },
   { href: '/admin/data', label: 'Data Statistik', icon: Database },
+  // Hanya admin kanwil & superadmin yang mengelola serapan anggaran Kanwil
+  { href: '/admin/serapan', label: 'Serapan Anggaran Kanwil', icon: Coins, kanwilOnly: true },
   // Hanya superadmin yang boleh mengelola pengguna
   { href: '/admin/users', label: 'Manajemen Pengguna', icon: Users, superadminOnly: true },
 ]
@@ -102,9 +106,18 @@ export default function AdminLayout({
     }
   }, [profile, pathname, router])
 
-  const visibleNavItems = navItems.filter(
-    (item) => !item.superadminOnly || profile?.role === 'superadmin',
-  )
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.superadminOnly && profile?.role !== 'superadmin') return false
+    // Serapan Kanwil hanya untuk admin kanwil & superadmin
+    if (item.kanwilOnly) {
+      const isKanwil =
+        profile?.role === 'superadmin' ||
+        (profile?.role === 'admin_kanwil' && profile.unit_slug === 'kanwil-sulbar') ||
+        (profile?.role === 'admin' && profile.unit_slug === 'kanwil-sulbar')
+      if (!isKanwil) return false
+    }
+    return true
+  })
 
   const initials = (() => {
     const source = profile?.full_name || userEmail || ''

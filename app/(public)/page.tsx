@@ -186,7 +186,7 @@ export default function Home() {
                 "
                 > */}
                 <div
-  className="
+                  className="
     w-6
     h-6
     rounded-full
@@ -206,7 +206,7 @@ export default function Home() {
     border-accent
     border-2
   "
->
+                >
                   <ArrowRight
                     className="
                     w-4
