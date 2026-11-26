@@ -131,6 +131,11 @@ export async function POST(req: Request) {
   const imageUrl = body.image_url ? String(body.image_url).trim() : null
   const published = body.published !== undefined ? Boolean(body.published) : true
   const bidangId = body.bidang_id ? String(body.bidang_id).trim() : null
+  // gallery: array string (path storage) — hanya simpan bila valid array
+  const gallery =
+    Array.isArray(body.gallery) && body.gallery.length > 0
+      ? (body.gallery.filter((g) => typeof g === 'string').map((g) => String(g).trim()))
+      : null
 
   if (!title) {
     return NextResponse.json({error: 'Judul kegiatan wajib diisi.'}, {status: 400})
@@ -161,14 +166,39 @@ export async function POST(req: Request) {
       location,
       type,
       image_url: imageUrl,
+      // Jangan masukkan gallery jika kolom belum ada di database
+      ...(gallery ? { gallery } : {}),
       published,
       created_by: gate.profile.id,
       updated_at: new Date().toISOString(),
     })
-    .select('*')
+    .select('id, title, date, unit_id, published') // Select fields yang pasti ada
     .single()
 
   if (error) {
+    // Jika error karena kolom gallery tidak ada, coba insert tanpa gallery
+    if (error.message.includes('gallery')) {
+      const { data: retryData, error: retryError } = await gate.service
+        .from('kegiatan')
+        .insert({
+          unit_id: unitId,
+          bidang_id: bidangId,
+          title,
+          description,
+          date,
+          location,
+          type,
+          image_url: imageUrl,
+          published,
+          created_by: gate.profile.id,
+          updated_at: new Date().toISOString(),
+        })
+        .select('id, title, date, unit_id, published')
+        .single()
+      
+      if (retryError) return NextResponse.json({error: retryError.message}, {status: 500})
+      return NextResponse.json({kegiatan: retryData, warning: 'Kolom gallery belum tersedia di database.'})
+    }
     return NextResponse.json({error: error.message}, {status: 500})
   }
 
@@ -225,6 +255,12 @@ export async function PATCH(req: Request) {
   if (body.type !== undefined) updates.type = body.type ? String(body.type).trim() : 'Intel-WAS'
   if (body.image_url !== undefined)
     updates.image_url = body.image_url ? String(body.image_url).trim() : null
+  if (body.gallery !== undefined) {
+    updates.gallery =
+      Array.isArray(body.gallery) && body.gallery.length > 0
+        ? body.gallery.filter((g) => typeof g === 'string').map((g) => String(g).trim())
+        : null
+  }
   if (body.published !== undefined) updates.published = Boolean(body.published)
   if (body.bidang_id !== undefined)
     updates.bidang_id = body.bidang_id ? String(body.bidang_id).trim() : null
@@ -238,10 +274,25 @@ export async function PATCH(req: Request) {
     .from('kegiatan')
     .update(updates)
     .eq('id', id)
-    .select('*')
+    .select('id, title, date, unit_id, published')
     .single()
 
   if (error) {
+    // Jika error karena kolom gallery tidak ada, coba update tanpa gallery
+    if (error.message.includes('gallery')) {
+      const updatesWithoutGallery = { ...updates }
+      delete updatesWithoutGallery.gallery
+
+      const { data: retryData, error: retryError } = await gate.service
+        .from('kegiatan')
+        .update(updatesWithoutGallery)
+        .eq('id', id)
+        .select('id, title, date, unit_id, published')
+        .single()
+      
+      if (retryError) return NextResponse.json({error: retryError.message}, {status: 500})
+      return NextResponse.json({kegiatan: retryData, warning: 'Kolom gallery belum tersedia di database.'})
+    }
     return NextResponse.json({error: error.message}, {status: 500})
   }
 
@@ -265,9 +316,22 @@ export async function DELETE(req: Request) {
 
   const {data: existing, error: existError} = await gate.service
     .from('kegiatan')
-    .select('unit_id')
+    .select('unit_id, image_url') // Hilangkan gallery sementara untuk keamanan
     .eq('id', id)
     .single()
+
+  // Coba ambil gallery secara terpisah agar tidak crash bila kolom belum ada
+  let gallery: any[] = []
+  try {
+    const { data: gData } = await gate.service
+      .from('kegiatan')
+      .select('gallery')
+      .eq('id', id)
+      .single()
+    if (gData && Array.isArray(gData.gallery)) gallery = gData.gallery
+  } catch {
+    // abaikan bila kolom tidak ada
+  }
 
   if (existError || !existing) {
     return NextResponse.json({error: 'Kegiatan tidak ditemukan.'}, {status: 404})
@@ -284,6 +348,24 @@ export async function DELETE(req: Request) {
 
   if (error) {
     return NextResponse.json({error: error.message}, {status: 500})
+  }
+
+  // Bersihkan gambar di storage (best-effort; tidak memblokir hasil hapus DB)
+  try {
+    const paths: string[] = []
+    if (existing.image_url) paths.push(String(existing.image_url))
+    gallery.forEach((g) => {
+      if (typeof g === 'string') paths.push(g)
+    })
+    // Hanya hapus path yang berada di bawah bucket kegiatan/{unit}/
+    const storagePaths = paths.filter((p) =>
+      p.startsWith(`${existing.unit_id}/`),
+    )
+    if (storagePaths.length > 0) {
+      await gate.service.storage.from('kegiatan').remove(storagePaths)
+    }
+  } catch {
+    // Abaikan error pembersihan storage; data DB sudah terhapus.
   }
 
   return NextResponse.json({success: true, message: 'Kegiatan berhasil dihapus.'})

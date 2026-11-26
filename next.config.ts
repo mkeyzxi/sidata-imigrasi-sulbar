@@ -15,6 +15,13 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Subdomain storage Supabase (mis. abcdefg.supabase.co)
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

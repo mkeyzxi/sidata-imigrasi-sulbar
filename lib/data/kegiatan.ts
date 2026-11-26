@@ -8,7 +8,7 @@
 // ============================================================
 
 export type KegiatanStatis = {
-  id: string
+  id: string | number
   title: string
   date: string
   location?: string
