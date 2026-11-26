@@ -1,10 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Search, SearchX, Filter, CalendarDays, Loader2, Building2 } from 'lucide-react'
 import ActivityCard from '@/components/activities/ActivityCard'
 import {daftarKegiatanStatis} from '@/lib/data/kegiatan'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Data Kegiatan',
+  description: 'Arsip dan jadwal operasional dari Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat, Imigrasi Mamuju, dan Imigrasi Polman.',
+}
 
 const UNIT_FILTERS = [
   { id: 'all', label: 'Semua Unit' },

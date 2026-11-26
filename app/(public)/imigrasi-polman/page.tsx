@@ -14,6 +14,12 @@ import {
 import { getPolmanData, getKegiatanList, type PolmanData } from '@/lib/supabase/data-service'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import ActivityCard from '@/components/activities/ActivityCard'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Imigrasi Polman',
+  description: 'Pusat pelayanan keimigrasian terpadu meliputi penerbitan dokumen perjalanan, pengelolaan izin tinggal orang asing, serta pengawasan keimigrasian di wilayah Polewali Mandar.',
+}
 
 export default async function ImigrasiPolmanPage() {
   const data: PolmanData = await getPolmanData(2026)

@@ -1,0 +1,11 @@
+# robots.txt for data-imigrasi-sulbar.my.id
+# Allows indexing by all search engines (including Google, Bing, etc.)
+# Disallows access to admin and login pages to prevent crawling of private routes
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /login
+
+# Sitemap location for Google Search Console
+Sitemap: https://data-imigrasi-sulbar.my.id/sitemap.xml

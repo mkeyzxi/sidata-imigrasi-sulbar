@@ -16,6 +16,12 @@ import {
 import { units } from '@/lib/data/units'
 import { getRegionalStats, getMamujuData, getPolmanData } from '@/lib/supabase/data-service'
 import { formatNumber } from '@/lib/utils/format'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Pusat Data Keimigrasian',
+  description: 'Rekapitulasi terpusat statistik layanan dokumen perjalanan, izin tinggal orang asing, serta indikator operasional dari seluruh unit kerja di wilayah Sulawesi Barat.',
+}
 
 export default async function DataPage() {
   const stats = await getRegionalStats(2026)

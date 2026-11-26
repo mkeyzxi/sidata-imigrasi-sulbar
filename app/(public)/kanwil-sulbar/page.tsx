@@ -4,6 +4,12 @@ import {ArrowLeft, ArrowRight, Building2, Calendar, FileText, Network, Activity}
 import { getKanwilData, getKegiatanList } from '@/lib/supabase/data-service'
 import ActivityCard from '@/components/activities/ActivityCard'
 import {formatCurrency} from '@/lib/utils/format'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Kantor Wilayah',
+  description: 'Pusat koordinasi, administrasi, dan informasi data keimigrasian di lingkungan Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Barat.',
+}
 
 export default async function KanwilSulbarPage() {
   const kanwilData = await getKanwilData()

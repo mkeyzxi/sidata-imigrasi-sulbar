@@ -14,6 +14,12 @@ import {
   Info,
   Building2,
 } from 'lucide-react'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Hubungi Kami',
+  description: 'Hubungi kantor terkait untuk pertanyaan, saran, dan laporan seputar layanan keimigrasian di Sulawesi Barat.',
+}
 
 const contactInfo = [
   {
