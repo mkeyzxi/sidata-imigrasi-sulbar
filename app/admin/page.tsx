@@ -176,12 +176,12 @@ export default function AdminPage() {
                   <Newspaper className="w-5 h-5" />
                 </div>
                 <h3 className="font-bold text-heading group-hover:text-primary-dark transition-colors">
-                  Berita & Kegiatan
+                  Kegiatan
                 </h3>
               </div>
               <p className="text-sm text-text/70">
-                Tambah, edit, dan hapus artikel/kegiatan — tersimpan ke Supabase
-                dan otomatis tampil di menu <Link href="/berita" className="text-accent hover:underline">Berita</Link>
+                Tambah, edit, dan hapus kegiatan — tersimpan ke Supabase
+                dan otomatis tampil di menu <Link href="/kegiatan" className="text-accent hover:underline">Kegiatan</Link>
               </p>
             </Link>
 

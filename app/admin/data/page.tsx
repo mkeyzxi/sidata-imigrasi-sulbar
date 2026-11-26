@@ -73,6 +73,7 @@ const KATEGORI_OPTIONS = [
   'intel_was',
   'anggaran',
   'pnbp',
+  'perlintasan',
 ]
 
 const TAHUN_OPTIONS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i)

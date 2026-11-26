@@ -88,7 +88,7 @@ function AdminKegiatanContent() {
     description: '',
     date: new Date().toISOString().split('T')[0],
     location: '',
-    type: 'Intel-WAS',
+    type: 'Koordinasi',
     image_url: '',
     unit_id: '',
     published: true,
@@ -189,7 +189,7 @@ function AdminKegiatanContent() {
         description: k.description || '',
         date: k.date,
         location: k.location || '',
-        type: k.type || 'Intel-WAS',
+        type: k.type || 'Koordinasi',
         image_url: k.image_url || '',
         unit_id: k.unit_id,
         published: k.published,
@@ -201,7 +201,7 @@ function AdminKegiatanContent() {
         description: '',
         date: new Date().toISOString().split('T')[0],
         location: '',
-        type: 'Intel-WAS',
+        type: 'Koordinasi',
         image_url: '',
         unit_id: access.unit_slug || unitOptions[0]?.id || '',
         published: true,
@@ -391,7 +391,7 @@ function AdminKegiatanContent() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-primary-dark tracking-tight">
-              Kelola Berita & Kegiatan
+              Kelola Kegiatan
             </h1>
             <p className="text-text/70 mt-1">
               {kegiatan.length} kegiatan tercatat
@@ -400,9 +400,9 @@ function AdminKegiatanContent() {
                 : ''}
             </p>
             <p className="text-xs text-text/50 mt-2 max-w-xl">
-              Berita yang ditambahkan akan tersimpan ke Supabase dan otomatis
-              muncul di menu <Link href="/berita" className="text-accent hover:underline font-bold">Berita</Link>
-              (melanjutkan daftar berita statis bawaan).
+              Kegiatan/berita yang ditambahkan akan tersimpan ke Supabase dan otomatis
+              muncul di menu <Link href="/kegiatan" className="text-accent hover:underline font-bold">Kegiatan</Link>
+              (melanjutkan daftar kegiatan statis bawaan).
             </p>
           </div>
 
@@ -576,7 +576,6 @@ function AdminKegiatanContent() {
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                         className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       >
-                        <option value="Berita">Berita</option>
                         <option value="Koordinasi">Koordinasi</option>
                         <option value="Intel-WAS">Intel-WAS</option>
                         <option value="Pelayanan">Pelayanan</option>

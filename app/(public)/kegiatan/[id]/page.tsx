@@ -4,6 +4,7 @@ import {notFound} from 'next/navigation'
 import {ArrowLeft, CalendarDays, MapPin, Building2, Tag, ChevronRight, Share2} from 'lucide-react'
 import {getKegiatanDetail} from '@/lib/supabase/data-service'
 import {formatDate} from '@/lib/utils/format'
+import BeritaSlider from '@/components/berita/BeritaSlider'
 
 export default async function ActivityDetailPage({params}: {params: Promise<{id: string}>}) {
   const {id} = await params
@@ -12,6 +13,12 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
   if (!kegiatan) {
     notFound()
   }
+
+  // Data statis bawaan (koordinasi BKN) memiliki galeri 3 gambar —
+  // tampilkan sebagai slider + thumbnail di halaman detail
+  const gallery =
+    (kegiatan as {gallery?: string[]}).gallery &&
+    ((kegiatan as {gallery?: string[]}).gallery!.length > 1 ? (kegiatan as {gallery?: string[]}).gallery! : undefined)
 
   return (
     <main className="min-h-screen bg-background text-text pb-28 selection:bg-accent selection:text-white">
@@ -99,7 +106,7 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
         </header>
 
         {/* Featured Image */}
-        <figure className="relative aspect-[21/9] w-full rounded-3xl overflow-hidden bg-muted mb-12 shadow-sm">
+        <figure className="relative aspect-[21/9] w-full rounded-3xl overflow-hidden bg-muted mb-6 shadow-sm">
           <Image
             src={kegiatan.image || 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&q=80'}
             alt={kegiatan.title}
@@ -108,6 +115,27 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
             priority
           />
         </figure>
+
+        {/* Galeri Dokumentasi (jika ada banyak gambar, mis. berita statis) */}
+        {gallery && (
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-0.5 bg-accent" />
+              <h3 className="font-black text-heading uppercase tracking-widest text-sm">
+                Galeri Dokumentasi
+              </h3>
+            </div>
+            <BeritaSlider
+              images={gallery}
+              alt={kegiatan.title}
+              captions={[
+                '[Image 1] — Suasana rapat koordinasi di BKN',
+                '[Image 2] — Diskusi bersama Panitia Pusat',
+                '[Image 3] — Penutupan dan foto bersama',
+              ].slice(0, gallery.length)}
+            />
+          </div>
+        )}
 
         {/* Content Body */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">

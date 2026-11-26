@@ -34,7 +34,7 @@ const navItems: Array<{
   kanwilOnly?: boolean
 }> = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/kegiatan', label: 'Berita & Kegiatan', icon: FileEdit },
+  { href: '/admin/kegiatan', label: 'Kegiatan', icon: FileEdit },
   { href: '/admin/data', label: 'Data Statistik', icon: Database },
   // Hanya admin kanwil & superadmin yang mengelola serapan anggaran Kanwil
   { href: '/admin/serapan', label: 'Serapan Anggaran Kanwil', icon: Coins, kanwilOnly: true },

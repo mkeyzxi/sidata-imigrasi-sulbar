@@ -1,13 +1,13 @@
 // ============================================================
-// Berita & Kegiatan Statis (Bawaan)
+// Kegiatan Statis (Bawaan)
 //
-// Konten berita di bawah ini bersifat statis / hardcoded:
-// langsung tampil di halaman tanpa perlu mengambil data dari
-// database terlebih dahulu. Berita yang ditambahkan admin
-// (via Supabase) akan melanjutkan daftar ini.
+// Konten kegiatan di bawah ini bersifat statis / hardcoded:
+// langsung tampil di halaman /kegiatan tanpa perlu mengambil
+// data dari database terlebih dahulu. Kegiatan yang ditambahkan
+// admin (via Supabase) akan melanjutkan daftar ini.
 // ============================================================
 
-export type BeritaStatis = {
+export type KegiatanStatis = {
   id: string
   title: string
   date: string
@@ -27,7 +27,7 @@ const IMAGE_1 = '/kegiatan-image/kordinasi-bkn-satu.webp'
 const IMAGE_2 = '/kegiatan-image/kordinasi-bkn-dua.webp'
 const IMAGE_3 = '/kegiatan-image/kordinasi-bkn-tiga.webp'
 
-export const beritaUtama: BeritaStatis = {
+export const beritaUtama: KegiatanStatis = {
   id: 'statis-1',
   title:
     'Koordinasi di BKN bersama Panitia Pusat, Kanwil Ditjenim, dan Kanwil Ditjenpas terkait Persiapan Uji Penyesuaian Ijazah dan Ujian Dinas',
@@ -46,4 +46,4 @@ export const beritaUtama: BeritaStatis = {
   source: 'statis',
 }
 
-export const daftarBeritaStatis: BeritaStatis[] = [beritaUtama]
+export const daftarBeritaStatis: KegiatanStatis[] = [beritaUtama]

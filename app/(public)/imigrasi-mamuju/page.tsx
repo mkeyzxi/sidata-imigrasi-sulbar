@@ -29,6 +29,7 @@ export default async function ImigasiMamujuPage() {
   const mamujuWNA = data.wna
   const mamujuTAK = data.tak
   const mamujuBAP = data.bap
+  const mamujuPerlintasan = data.perlintasan
   const mamujuAnggaran = data.anggaran
   const mamujuPNBP = data.pnbp
   const mamujuSerapanBulanan = data.serapanBulanan
@@ -126,24 +127,22 @@ export default async function ImigasiMamujuPage() {
 
           <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <span className="text-sm font-bold uppercase tracking-widest text-text/50 block mb-3">
-              Paspor Baru
+              Paspor Elektronik
             </span>
             <div className="text-4xl font-black text-heading tracking-tight">
-              {formatNumber(mamujuPassportData.breakdown.baru.total)}
+              {formatNumber((mamujuPassportData.breakdown as any).pasporElektronik?.total ?? 0)}
             </div>
-            <span className="text-sm text-text/50 mt-2 block font-medium">
-              Laki-laki: {mamujuPassportData.breakdown.baru.l} · Perempuan: {mamujuPassportData.breakdown.baru.p}
-            </span>
+            <span className="text-sm text-text/50 mt-2 block font-medium">48 Halaman</span>
           </div>
 
           <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <span className="text-sm font-bold uppercase tracking-widest text-text/50 block mb-3">
-              Penggantian Paspor
+              Paspor Biasa
             </span>
             <div className="text-4xl font-black text-heading tracking-tight">
-              {formatNumber(totalGantiPaspor)}
+              {formatNumber((mamujuPassportData.breakdown as any).pasporBiasa?.total ?? 0)}
             </div>
-            <span className="text-sm text-text/50 mt-2 block font-medium">Masa berlaku, rusak, dan hilang</span>
+            <span className="text-sm text-text/50 mt-2 block font-medium">48 Halaman</span>
           </div>
         </div>
 
@@ -151,48 +150,22 @@ export default async function ImigasiMamujuPage() {
         <div className="bg-surface rounded-2xl shadow-sm p-4 md:p-6">
           <div className="px-4 py-2 mb-2">
             <h3 className="text-sm font-bold uppercase tracking-wider text-text/50">
-              Rincian Jenis Permohonan Paspor
+              Rincian Jenis Paspor
             </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <tbody className="text-base">
                 <tr className="hover:bg-muted/40 transition-colors rounded-xl">
-                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Permohonan Baru</td>
+                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Paspor Biasa 48 Halaman</td>
                   <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber(mamujuPassportData.breakdown.baru.total)}
+                    {formatNumber((mamujuPassportData.breakdown as any).pasporBiasa?.total ?? 0)}
                   </td>
                 </tr>
                 <tr className="hover:bg-muted/40 transition-colors rounded-xl">
-                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Permohonan Baru Percepatan</td>
+                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Paspor Elektronik 48 Halaman</td>
                   <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber(mamujuPassportData.breakdown.baruPercepatan.total)}
-                  </td>
-                </tr>
-                <tr className="hover:bg-muted/40 transition-colors rounded-xl">
-                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Penggantian Masa Berlaku</td>
-                  <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber(mamujuPassportData.breakdown.gantiMasaBerlaku.total)}
-                  </td>
-                </tr>
-                <tr className="hover:bg-muted/40 transition-colors rounded-xl">
-                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Penggantian Paspor Hilang</td>
-                  <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber(mamujuPassportData.breakdown.gantiHilang.total)}
-                  </td>
-                </tr>
-                <tr className="hover:bg-muted/40 transition-colors rounded-xl">
-                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">Penggantian Halaman Penuh</td>
-                  <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber(mamujuPassportData.breakdown.gantiHalamanPenuh.total)}
-                  </td>
-                </tr>
-                <tr className="hover:bg-muted/40 transition-colors rounded-xl">
-                  <td className="px-4 py-3.5 font-medium text-heading rounded-l-xl">
-                    Penggantian Masih Berlaku Percepatan
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-bold text-primary-dark rounded-r-xl">
-                    {formatNumber(mamujuPassportData.breakdown.gantiMasihBerlakuPercepatan.total)}
+                    {formatNumber((mamujuPassportData.breakdown as any).pasporElektronik?.total ?? 0)}
                   </td>
                 </tr>
               </tbody>
@@ -200,6 +173,51 @@ export default async function ImigasiMamujuPage() {
           </div>
         </div>
       </section>
+
+      {/* SECTION 1.5: PERLINTASAN */}
+      {mamujuPerlintasan.total > 0 && (
+        <section className="max-w-7xl mx-auto px-6 mb-20">
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-accent mb-2">
+              <MapPin className="w-3.5 h-3.5" />
+              Perlintasan
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-heading tracking-tight">Data Perlintasan Imigrasi</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+              <span className="text-sm font-bold uppercase tracking-widest text-text/50 mb-2 block">
+                Kedatangan
+              </span>
+              <div className="text-3xl font-black text-primary-dark mb-1 tracking-tight">
+                {formatNumber(mamujuPerlintasan.kedatangan)}
+              </div>
+              <span className="text-sm text-text/50 font-medium">Orang masuk</span>
+            </div>
+
+            <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+              <span className="text-sm font-bold uppercase tracking-widest text-text/50 mb-2 block">
+                Keberangkatan
+              </span>
+              <div className="text-3xl font-black text-primary-dark mb-1 tracking-tight">
+                {formatNumber(mamujuPerlintasan.keberangkatan)}
+              </div>
+              <span className="text-sm text-text/50 font-medium">Orang keluar</span>
+            </div>
+
+            <div className="bg-surface p-7 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+              <span className="text-sm font-bold uppercase tracking-widest text-text/50 mb-2 block">
+                Total Perlintasan
+              </span>
+              <div className="text-3xl font-black text-accent mb-1 tracking-tight">
+                {formatNumber(mamujuPerlintasan.total)}
+              </div>
+              <span className="text-sm text-text/50 font-medium">Akumulasi 2026</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* SECTION 2: IZIN TINGGAL */}
       <section className="max-w-7xl mx-auto px-6 mb-20">

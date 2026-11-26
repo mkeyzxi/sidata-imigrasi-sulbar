@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Search, SearchX, Filter, CalendarDays, Loader2, Building2 } from 'lucide-react'
 import ActivityCard from '@/components/activities/ActivityCard'
-import { kanwilKegiatan } from '@/lib/data/kanwil'
-import { mamujuKegiatan } from '@/lib/data/mamuju'
-import { polmanKegiatan } from '@/lib/data/polman'
+import {daftarBeritaStatis} from '@/lib/data/berita'
 
 const UNIT_FILTERS = [
   { id: 'all', label: 'Semua Unit' },
@@ -24,21 +22,31 @@ type ActivityItem = {
   description?: string
   image?: string
   unit: string
+  unit_id: string
 }
 
 export default function KegiatanPage() {
-  const defaultKegiatan: ActivityItem[] = [
-    ...kanwilKegiatan.map((k) => ({ ...k, unit: 'Kanwil Sulbar' })),
-    ...mamujuKegiatan.map((k) => ({ ...k, unit: 'Imigrasi Mamuju' })),
-    ...polmanKegiatan.map((k) => ({ ...k, unit: 'Imigrasi Polman' })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Kegiatan statis bawaan (berita koordinasi BKN 17 November 2026)
+  // langsung muncul tanpa menunggu database
+  const defaultKegiatan: ActivityItem[] = daftarBeritaStatis.map((b) => ({
+    id: b.id,
+    title: b.title,
+    date: b.date,
+    location: b.location,
+    type: b.type,
+    description: b.description,
+    image: b.image,
+    unit: b.unit,
+    unit_id: b.unit_id,
+  }))
 
   const [allKegiatan, setAllKegiatan] = useState<ActivityItem[]>(defaultKegiatan)
   const [loading, setLoading] = useState(true)
   const [filterUnit, setFilterUnit] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
 
-  // Muat data langsung dari Supabase melalui API
+  // Muat kegiatan tambahan dari Supabase melalui API (menggabungkan
+  // daftar statis + data dinamis; berita statis tidak akan hilang)
   useEffect(() => {
     async function fetchKegiatan() {
       try {
@@ -46,7 +54,7 @@ export default function KegiatanPage() {
         if (res.ok) {
           const json = await res.json()
           if (json.kegiatan && json.kegiatan.length > 0) {
-            setAllKegiatan(json.kegiatan)
+            setAllKegiatan(json.kegiatan as ActivityItem[])
           }
         }
       } catch (err) {

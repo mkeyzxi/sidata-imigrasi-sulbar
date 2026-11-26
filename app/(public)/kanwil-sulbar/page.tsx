@@ -14,10 +14,12 @@ export default async function KanwilSulbarPage() {
   const totalKegiatan = kanwilKegiatan.length
   const totalBidang = kanwilBidang.length
 
-  // Mengambil total serapan dari data Supabase dengan aman
-  const totalAnggaranTerserap = kanwilSerapanBidang['bidang-1']
-    ? kanwilSerapanBidang['bidang-1'].reduce((sum, item) => sum + item.jumlah, 0)
-    : 0
+  // Total serapan = akumulasi dari SEMUA bidang (bukan hanya satu)
+  const totalAnggaranTerserap = Object.values(kanwilSerapanBidang).reduce(
+    (grandSum, daftarBulanan) =>
+      grandSum + (daftarBulanan || []).reduce((sum, item) => sum + item.jumlah, 0),
+    0,
+  )
 
   return (
     <main className="min-h-screen bg-background text-text pb-28 selection:bg-accent selection:text-white">

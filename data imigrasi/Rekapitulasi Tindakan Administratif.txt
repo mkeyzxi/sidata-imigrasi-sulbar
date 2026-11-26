@@ -1,0 +1,15 @@
+Rekapitulasi Tindakan Administratif Keimigrasian (TAK);
+4 TAK 
+(Pendetensian 2, Pendeportasian 2)
+- 1 China (Detensi)
+- 1 Pilipina (Detensi+Deportasi)
+- ⁠1 Malaysia (Deportasi)
+
+Data Berita Acara Pemeriksaan (BAP);
+- WNI = 278 org
+- ⁠WNA = 4 Orang (1 China, 1 Pilipina, 1 Malaysia, 1 Iran)
+
+Data Kegiatan Intelijen dan Pengawasan Keimigrasian;
+- Ops Intel: 14 Kegiatan
+- Opsman: 9  Kegiatan
+- Opsgab: 4 Kegiatan

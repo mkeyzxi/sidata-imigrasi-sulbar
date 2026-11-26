@@ -1,74 +1,88 @@
-// Data dari PINTAS Imigrasi Mamuju
+// Data terupdate dari "data imigrasi" - Rekapan Data Keimigrasian 2026.pdf
+// Periode: Januari - November 2026
 export const mamujuPassportData = {
-  total: 2686,
+  total: 3079,
   year: 2026,
   breakdown: {
-    baru: { l: 822, p: 1263, total: 2085 },
-    baruPercepatan: { l: 22, p: 40, total: 62 },
-    gantiHalamanPenuh: { l: 7, p: 18, total: 25 },
-    gantiHilang: { l: 23, p: 35, total: 58 },
-    gantiMasaBerlaku: { l: 183, p: 239, total: 422 },
-    gantiMasihBerlakuPercepatan: { l: 12, p: 19, total: 31 },
-    gantiRusak: { l: 2, p: 1, total: 3 }
+    baru: { l: 0, p: 0, total: 0 },
+    baruPercepatan: { l: 0, p: 0, total: 0 },
+    gantiHalamanPenuh: { l: 0, p: 0, total: 0 },
+    gantiHilang: { l: 0, p: 0, total: 0 },
+    gantiMasaBerlaku: { l: 0, p: 0, total: 0 },
+    gantiMasihBerlakuPercepatan: { l: 0, p: 0, total: 0 },
+    gantiRusak: { l: 0, p: 0, total: 0 },
+    // Struktur baru dari rekap
+    pasporBiasa: { total: 1 },
+    pasporElektronik: { total: 3078 },
   }
 };
 
 export const mamujuIzinTinggal = {
-  total: 8,
-  itk: 4,
-  itap: 2,
-  itas: 2
+  total: 41,
+  itk: 16,
+  itap: 8,
+  itas: 17
 };
 
 export const mamujuWNA = {
-  total: 17,
-  aktif: 17,
-  akanExpired: 2,
-  sudahExpired: 13
+  total: 0, // Data WNA aktif belum tersedia di rekap
+  aktif: 0,
+  akanExpired: 0,
+  sudahExpired: 0
 };
 
 export const mamujuTAK = {
   total: 23,
+  orang: 8,
   jenisPerTAK: {
-    bertempat: 8,
-    deportasi: 8,
-    pencegahan: 7
+    bertempat: 0,
+    deportasi: 0,
+    pencegahan: 0
   }
 };
 
 export const mamujuBAP = {
-  wni: 63,
-  wna: 8,
+  wni: 71, // Total BAP 76 - Rusak 5
+  wna: 0,
+  total: 76,
+  hilang: 71,
+  rusak: 5,
   detail: {
-    pasporHilang: 60,
-    pasporRusak: 3,
+    pasporHilang: 71,
+    pasporRusak: 5,
     perubahanData: 0
   }
 };
 
 export const mamujuIntelWas = {
   total: 93,
-  totalPetugas: 554,
+  totalPetugas: 0, // Data petugas tidak tersedia di rekap
   breakdown: {
-    operasiIntelijen: { kegiatan: 43, petugas: 246 },
-    operasiMandiri: { kegiatan: 29, petugas: 170 },
-    patroli: { kegiatan: 8, petugas: 47 },
-    opGabungan: { kegiatan: 4, petugas: 33 },
-    rapatTimpora: { kegiatan: 5, petugas: 30 },
-    desaBinaan: { kegiatan: 4, petugas: 28 }
+    operasiIntelijen: { kegiatan: 44, petugas: 0 },
+    operasiMandiri: { kegiatan: 23, petugas: 0 },
+    patroli: { kegiatan: 9, petugas: 0 },
+    opGabungan: { kegiatan: 2, petugas: 0 },
+    rapatTimpora: { kegiatan: 3, petugas: 0 },
+    desaBinaan: { kegiatan: 4, petugas: 0 }
   }
+};
+
+export const mamujuPerlintasan = {
+  total: 2186,
+  kedatangan: 946,
+  keberangkatan: 1240
 };
 
 export const mamujuAnggaran = {
   pagu: 12740000000, // 12.74 M
-  realisasi: 8730000000, // 8.73 M
-  persentase: 68.5
+  realisasi: 11190000000, // 11.19 M
+  persentase: 87.8
 };
 
 export const mamujuPNBP = {
   target: 1920000000, // 1.92 M
-  realisasi: 2130000000, // 2.13 M
-  persentase: 111.3
+  realisasi: 2580000000, // 2.58 M
+  persentase: 134.8
 };
 
 export const mamujuKegiatan = [
