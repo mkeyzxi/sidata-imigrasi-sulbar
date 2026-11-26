@@ -9,7 +9,7 @@ const inter = Inter({
 
 // Production base URL — set NEXT_PUBLIC_SITE_URL to your deployed domain.
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://data-imigrasi-sulbar.my.id'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -55,11 +55,16 @@ export const metadata: Metadata = {
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
       {
         url: '/apple-touch-icon.png',
         sizes: '180x180',
+      },
+      {
+        url: '/icon.png',
+        sizes: '512x512',
       },
     ],
   },
@@ -77,6 +82,12 @@ export const metadata: Metadata = {
       'Portal informasi dan data keimigrasian terintegrasi di wilayah Sulawesi Barat.',
     images: [
       {
+        url: '/icon.png',
+        width: 512,
+        height: 512,
+        alt: 'SI Data Imigrasi Sulbar',
+      },
+      {
         url: '/og-image.png',
         width: 1200,
         height: 630,
@@ -93,7 +104,7 @@ export const metadata: Metadata = {
       'SI Data Imigrasi Sulbar — Sistem Informasi Data Keimigrasian Terintegrasi',
     description:
       'Portal informasi dan data keimigrasian terintegrasi di wilayah Sulawesi Barat.',
-    images: ['/og-image.png'],
+    images: ['/icon.png', '/og-image.png'],
   },
 
   // ---- Microsoft / Bing verification (optional — fill in when you have one) ----

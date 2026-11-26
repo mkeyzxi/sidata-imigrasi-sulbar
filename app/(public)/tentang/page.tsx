@@ -1,6 +1,12 @@
 import Link from 'next/link'
 import { units } from '@/lib/data/units'
 import { ArrowLeft, Target, Layers, Users, ShieldCheck, Info, ArrowRight } from 'lucide-react'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Tentang Sistem',
+  description: 'Platform satu pintu untuk menelusuri data layanan, serapan anggaran, dan kegiatan operasional dari seluruh unit kerja keimigrasian di wilayah Sulawesi Barat.',
+}
 
 export default function TentangPage() {
   return (

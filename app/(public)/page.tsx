@@ -1,6 +1,12 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import {ArrowRight} from 'lucide-react'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Beranda | SI Data Imigrasi Sulbar',
+  description: 'Portal data keimigrasian terpadu seluruh unit kerja di wilayah Sulawesi Barat. Akses informasi resmi, transparan, dan terintegrasi.',
+}
 
 const units = [
   {

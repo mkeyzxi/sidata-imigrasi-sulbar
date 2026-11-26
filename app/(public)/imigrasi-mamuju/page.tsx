@@ -16,6 +16,12 @@ import {
 import { getMamujuData, getKegiatanList, type MamujuData } from '@/lib/supabase/data-service'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import ActivityCard from '@/components/activities/ActivityCard'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Imigrasi Mamuju',
+  description: 'Pusat pelayanan keimigrasian terpadu meliputi penerbitan dokumen perjalanan, pengelolaan izin tinggal orang asing, serta operasi intelijen dan penegakan hukum di wilayah Mamuju.',
+}
 
 export default async function ImigasiMamujuPage() {
   const data: MamujuData = await getMamujuData(2026)
