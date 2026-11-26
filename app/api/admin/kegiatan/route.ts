@@ -73,14 +73,19 @@ async function verifyAuth(req: Request): Promise<AuthGate> {
 /** Normalisasi daftar gambar dari body request (maksimal 3 gambar). */
 function normalizeGalleryInput(rawGallery: unknown, rawImageUrl: string | null): string[] {
   const fromGallery = Array.isArray(rawGallery)
-    ? rawGallery.filter((g): g is string => typeof g === 'string' && g.trim().length > 0).map((g) => g.trim())
+    ? rawGallery
+        .filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
+        .map((g) => g.trim())
     : []
   const fromImageUrl = rawImageUrl ? parseRawImageList(rawImageUrl) : []
 
   // Jika user mengunggah/mengisi galeri, prioritaskan galeri; sertakan URL manual jika bukan fallback
-  const merged = fromGallery.length > 0
-    ? Array.from(new Set([...fromGallery, ...fromImageUrl.filter((u) => !u.includes('unsplash.com'))]))
-    : fromImageUrl
+  const merged =
+    fromGallery.length > 0
+      ? Array.from(
+          new Set([...fromGallery, ...fromImageUrl.filter((u) => !u.includes('unsplash.com'))]),
+        )
+      : fromImageUrl
 
   return merged.slice(0, MAX_GALLERY_IMAGES)
 }
@@ -97,10 +102,7 @@ export async function GET(req: Request) {
   // ?scope=all -> semua unit (hanya superadmin; default tetap sesuai peran)
   const scope = searchParams.get('scope')
 
-  let query = gate.service
-    .from('kegiatan')
-    .select('*')
-    .order('date', {ascending: false})
+  let query = gate.service.from('kegiatan').select('*').order('date', {ascending: false})
 
   // Jika bukan superadmin, paksa query hanya untuk unit yang dimiliki
   if (gate.profile.role !== 'superadmin') {
@@ -133,7 +135,8 @@ export async function GET(req: Request) {
     return {
       ...row,
       image_url: combined[0] || row.image_url || null,
-      gallery: combined.length > 0 ? combined : (row as {gallery?: string[] | null}).gallery || null,
+      gallery:
+        combined.length > 0 ? combined : (row as {gallery?: string[] | null}).gallery || null,
     }
   })
 
@@ -214,8 +217,7 @@ export async function POST(req: Request) {
   if (error) {
     // Jika kolom `gallery` belum ada di database, simpan seluruh array (maks 3) ke `image_url` sebagai JSON
     if (error.message.includes('gallery')) {
-      const encodedImageUrl =
-        gallery.length > 1 ? JSON.stringify(gallery) : primaryImageUrl
+      const encodedImageUrl = gallery.length > 1 ? JSON.stringify(gallery) : primaryImageUrl
 
       const {data: retryData, error: retryError} = await gate.service
         .from('kegiatan')
@@ -300,9 +302,12 @@ export async function PATCH(req: Request) {
     updates.location = body.location ? String(body.location).trim() : null
   if (body.type !== undefined) updates.type = body.type ? String(body.type).trim() : 'Intel-WAS'
 
-  const rawImageUrl = body.image_url !== undefined
-    ? (body.image_url ? String(body.image_url).trim() : null)
-    : undefined
+  const rawImageUrl =
+    body.image_url !== undefined
+      ? body.image_url
+        ? String(body.image_url).trim()
+        : null
+      : undefined
   let normalizedGallery: string[] | undefined
 
   if (body.gallery !== undefined || rawImageUrl !== undefined) {
