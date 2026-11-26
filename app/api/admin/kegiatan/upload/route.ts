@@ -5,9 +5,9 @@ import {createSupabaseServerClient} from '@/lib/supabase/server'
 
 export const maxDuration = 60
 
-// Batas ukuran upload per file (5 MB) & jumlah file (10)
+// Batas ukuran upload per file (5 MB) & jumlah file (3)
 const MAX_FILE_SIZE = 5 * 1024 * 1024
-const MAX_FILES = 10
+const MAX_FILES = 3
 // Dimensi target hasil resize (lebar 1600px, tinggi maksimum)
 const TARGET_WIDTH = 1600
 

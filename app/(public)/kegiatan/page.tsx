@@ -21,6 +21,7 @@ type ActivityItem = {
   type?: string
   description?: string
   image?: string
+  gallery?: string[]
   unit: string
   unit_id: string
 }
@@ -36,6 +37,7 @@ export default function KegiatanPage() {
     type: b.type,
     description: b.description,
     image: b.image,
+    gallery: b.gallery,
     unit: b.unit,
     unit_id: b.unit_id,
   }))
@@ -50,7 +52,7 @@ export default function KegiatanPage() {
   useEffect(() => {
     async function fetchKegiatan() {
       try {
-        const res = await fetch('/api/kegiatan')
+        const res = await fetch('/api/kegiatan', { cache: 'no-store' })
         if (res.ok) {
           const json = await res.json()
           if (json.kegiatan && json.kegiatan.length > 0) {
@@ -168,15 +170,7 @@ export default function KegiatanPage() {
         {filteredKegiatan.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {filteredKegiatan.map((kegiatan, index) => (
-              <div key={`${kegiatan.unit}-${kegiatan.id}-${index}`} className="flex flex-col">
-                <ActivityCard {...kegiatan} />
-                <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface shadow-xs w-fit">
-                  <Building2 className="w-3 h-3 text-accent" />
-                  <span className="text-xs font-bold text-text/70 uppercase tracking-wider">
-                    {kegiatan.unit}
-                  </span>
-                </div>
-              </div>
+              <ActivityCard key={`${kegiatan.unit}-${kegiatan.id}-${index}`} {...kegiatan} />
             ))}
           </div>
         ) : (

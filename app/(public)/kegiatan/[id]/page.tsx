@@ -6,6 +6,8 @@ import {getKegiatanDetail} from '@/lib/supabase/data-service'
 import {formatDate} from '@/lib/utils/format'
 import SliderGaleri from '@/components/kegiatan/SliderGaleri'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ActivityDetailPage({params}: {params: Promise<{id: string}>}) {
   const {id} = await params
   const kegiatan = await getKegiatanDetail(id)
@@ -14,11 +16,21 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
     notFound()
   }
 
-  // Data statis bawaan (koordinasi BKN) memiliki galeri 3 gambar —
-  // tampilkan sebagai slider + thumbnail di halaman detail
   const gallery =
     (kegiatan as {gallery?: string[]}).gallery &&
-    ((kegiatan as {gallery?: string[]}).gallery!.length > 1 ? (kegiatan as {gallery?: string[]}).gallery! : undefined)
+    (kegiatan as {gallery?: string[]}).gallery!.length > 1
+      ? (kegiatan as {gallery?: string[]}).gallery!.slice(0, 3)
+      : undefined
+
+  const captions = gallery
+    ? kegiatan.id === 'statis-1'
+      ? [
+          '[Image 1] — Suasana rapat koordinasi di BKN',
+          '[Image 2] — Diskusi bersama Panitia Pusat',
+          '[Image 3] — Penutupan dan foto bersama',
+        ].slice(0, gallery.length)
+      : gallery.map((_, idx) => `Dokumentasi ${idx + 1}`)
+    : undefined
 
   return (
     <main className="min-h-screen bg-background text-text pb-28 selection:bg-accent selection:text-white">
@@ -32,7 +44,7 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
           Kembali ke Direktori
         </Link>
 
-        <div className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-text/40 overflow-x-auto whitespace-nowrap hide-scrollbar">
+        {/* <div className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-text/40 overflow-x-auto whitespace-nowrap hide-scrollbar">
           <Link href="/" className="hover:text-primary-dark transition-colors">
             Beranda
           </Link>
@@ -42,7 +54,7 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
           </Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-primary-dark truncate">{kegiatan.title}</span>
-        </div>
+        </div> */}
       </nav>
 
       <article className="max-w-5xl mx-auto px-6">
@@ -105,36 +117,31 @@ export default async function ActivityDetailPage({params}: {params: Promise<{id:
           </div>
         </header>
 
-        {/* Featured Image */}
-        <figure className="relative aspect-[21/9] w-full rounded-3xl overflow-hidden bg-muted mb-6 shadow-sm">
-          <Image
-            src={kegiatan.image || 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&q=80'}
-            alt={kegiatan.title}
-            fill
-            className="object-cover"
-            priority
-          />
-        </figure>
-
-        {/* Galeri Dokumentasi (jika ada banyak gambar, mis. kegiatan statis) */}
-        {gallery && (
+        {/* Featured Image / Galeri Dokumentasi */}
+        {gallery ? (
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-5">
               <div className="w-8 h-0.5 bg-accent" />
               <h3 className="font-black text-heading uppercase tracking-widest text-sm">
-                Galeri Dokumentasi
+                Galeri Dokumentasi ({gallery.length} Foto)
               </h3>
             </div>
             <SliderGaleri
               images={gallery}
               alt={kegiatan.title}
-              captions={[
-                '[Image 1] — Suasana rapat koordinasi di BKN',
-                '[Image 2] — Diskusi bersama Panitia Pusat',
-                '[Image 3] — Penutupan dan foto bersama',
-              ].slice(0, gallery.length)}
+              captions={captions}
             />
           </div>
+        ) : (
+          <figure className="relative aspect-[21/9] w-full rounded-3xl overflow-hidden bg-muted mb-12 shadow-sm">
+            <Image
+              src={kegiatan.image || 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&q=80'}
+              alt={kegiatan.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </figure>
         )}
 
         {/* Content Body */}

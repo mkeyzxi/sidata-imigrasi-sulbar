@@ -30,6 +30,9 @@ import {
   useConfirmDialog,
   ConfirmDialog,
 } from '@/components/admin/feedback'
+import { parseRawImageList } from '@/lib/supabase/image-url'
+
+const MAX_GALLERY_IMAGES = 3
 
 type Profile = {
   id: string
@@ -193,7 +196,7 @@ function AdminKegiatanContent() {
   const galleryBase = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/+$/, '')
   const resolveGalleryUrl = (p: string) => {
     if (!p) return ''
-    if (p.startsWith('http://') || p.startsWith('https://')) return p
+    if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('/')) return p
     const clean = p.startsWith('kegiatan/') ? p : `kegiatan/${p}`
     return galleryBase
       ? `${galleryBase}/storage/v1/object/public/${clean}`
@@ -205,19 +208,15 @@ function AdminKegiatanContent() {
     setUploadError('')
     if (k) {
       setEditing(k)
-      // Gabungkan gambar lama: image_url lama + gallery lama
-      const oldPaths: string[] = []
-      if (k.image_url) oldPaths.push(k.image_url)
-      if (Array.isArray(k.gallery)) k.gallery.forEach((g) => oldPaths.push(g))
-      // Hapus duplikat, tapi pertahankan order (image_url dulu)
-      const uniquePaths = Array.from(new Set(oldPaths))
+      // Gabungkan gambar lama dari image_url (mendukung JSON array) & gallery (maks 3)
+      const uniquePaths = parseRawImageList(k.image_url, k.gallery).slice(0, MAX_GALLERY_IMAGES)
       setFormData({
         title: k.title,
         description: k.description || '',
         date: k.date,
         location: k.location || '',
         type: k.type || 'Koordinasi',
-        image_url: k.image_url || '',
+        image_url: uniquePaths[0] || '',
         gallery: uniquePaths,
         unit_id: k.unit_id,
         published: k.published,
@@ -240,11 +239,14 @@ function AdminKegiatanContent() {
   }
 
   const validateForm = (): string => {
-    if (!formData.title.trim()) return 'Judu kegiatan wajib diisi'
+    if (!formData.title.trim()) return 'Judul kegiatan wajib diisi'
     if (!formData.date) return 'Tanggal wajib diisi'
     if (!formData.unit_id) return 'Pilih unit kerja'
     if (!canManageUnit(access, formData.unit_id)) {
       return 'Anda tidak berhak mengelola unit ini'
+    }
+    if (formData.gallery.length > MAX_GALLERY_IMAGES) {
+      return `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan`
     }
     return ''
   }
@@ -253,12 +255,29 @@ function AdminKegiatanContent() {
    * Upload file gambar ke Supabase Storage via API server.
    * File di-resize & dikonversi ke WebP oleh server (sharp), lalu
    * di-upload ke bucket "kegiatan". Hasil: daftar path storage yang
-   * disimpan ke formData.gallery.
+   * disimpan ke formData.gallery (maksimal 3 gambar per kegiatan).
    */
   const handleUploadFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return
-    setUploading(true)
     setUploadError('')
+
+    const remaining = MAX_GALLERY_IMAGES - formData.gallery.length
+    if (remaining <= 0) {
+      const msg = `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan. Hapus salah satu gambar terlebih dahulu.`
+      setUploadError(msg)
+      push('error', msg)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    if (fileList.length > remaining) {
+      const msg = `Maksimal ${MAX_GALLERY_IMAGES} gambar per kegiatan. Anda hanya bisa menambahkan ${remaining} gambar lagi.`
+      setUploadError(msg)
+      push('error', msg)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    setUploading(true)
 
     try {
       const {data: {session}} = await supabase.auth.getSession()
@@ -278,14 +297,19 @@ function AdminKegiatanContent() {
         throw new Error(json.error || 'Gagal mengupload gambar.')
       }
 
-      // Gabungkan path baru dengan yang sudah ada
+      // Gabungkan path baru dengan yang sudah ada (maks 3 gambar)
       const newPaths: string[] = json.paths || []
-      setFormData((prev) => ({
-        ...prev,
-        // Gambar pertama jadi image_url (jika belum ada)
-        image_url: prev.image_url || (newPaths[0] ?? ''),
-        gallery: Array.from(new Set([...prev.gallery, ...newPaths])),
-      }))
+      setFormData((prev) => {
+        const nextGallery = Array.from(new Set([...prev.gallery, ...newPaths])).slice(0, MAX_GALLERY_IMAGES)
+        const isFallback = prev.image_url.includes('unsplash.com') || prev.image_url === ''
+        const updatedImageUrl = (isFallback && nextGallery.length > 0) ? nextGallery[0] : prev.image_url
+
+        return {
+          ...prev,
+          image_url: updatedImageUrl,
+          gallery: nextGallery,
+        }
+      })
 
       if (Array.isArray(json.errors) && json.errors.length > 0) {
         push('error', `Beberapa gambar gagal: ${json.errors.join(', ')}`)
@@ -332,7 +356,7 @@ function AdminKegiatanContent() {
       // Fallback
     }
 
-    let query = supabase
+    const query = supabase
       .from('kegiatan')
       .select('*')
       .order('date', { ascending: false })
@@ -361,9 +385,13 @@ function AdminKegiatanContent() {
       resolvedImageUrl = formData.gallery[0]
     }
 
+    const cappedGallery = formData.gallery.slice(0, MAX_GALLERY_IMAGES)
     const payload = {
       ...formData,
-      image_url: resolvedImageUrl || null,
+      gallery: cappedGallery,
+      // Jika unit adalah kanwil, paksa type menjadi 'Koordinasi' (standar kanwil)
+      type: formData.unit_id === 'kanwil-sulbar' ? 'Koordinasi' : formData.type,
+      image_url: resolvedImageUrl || cappedGallery[0] || null,
       ...(editing ? {id: editing.id} : {}),
     }
 
@@ -526,56 +554,78 @@ function AdminKegiatanContent() {
 
         {/* Kegiatan List */}
         <div className="space-y-3">
-          {kegiatan.map((k) => (
-            <div
-              key={k.id}
-              className="bg-surface rounded-xl shadow-sm p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase">
-                    {getUnitName(k.unit_id)}
-                  </span>
-                  <span className="text-xs text-text/50">{k.type}</span>
-                </div>
-                <h3 className="font-bold text-heading text-lg">{k.title}</h3>
-                <div className="flex items-center gap-4 text-sm text-text/60 mt-1">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {k.date}
-                  </span>
-                  {k.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {k.location}
-                    </span>
+          {kegiatan.map((k) => {
+            const thumbPaths = parseRawImageList(k.image_url, k.gallery).slice(0, MAX_GALLERY_IMAGES)
+            return (
+              <div
+                key={k.id}
+                className="bg-surface rounded-xl shadow-sm p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  {thumbPaths.length > 0 && (
+                    <div className="relative w-20 h-14 rounded-lg overflow-hidden bg-muted shrink-0">
+                      <img
+                        src={resolveGalleryUrl(thumbPaths[0])}
+                        alt={k.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {thumbPaths.length > 1 && (
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/75 text-white text-[9px] font-bold">
+                          +{thumbPaths.length - 1}
+                        </span>
+                      )}
+                    </div>
                   )}
-                  {!k.published && (
-                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
-                      Draf
-                    </span>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase">
+                        {getUnitName(k.unit_id)}
+                      </span>
+                      <span className="text-xs text-text/50">{k.type}</span>
+                      {thumbPaths.length > 0 && (
+                        <span className="text-xs text-text/50">· {thumbPaths.length} foto</span>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-heading text-lg">{k.title}</h3>
+                    <div className="flex items-center gap-4 text-sm text-text/60 mt-1">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {k.date}
+                      </span>
+                      {k.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {k.location}
+                        </span>
+                      )}
+                      {!k.published && (
+                        <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                          Draf
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {canManageLocalUnit(k.unit_id) && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openModal(k)}
-                    className="p-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => askDelete(k)}
-                    className="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                {canManageLocalUnit(k.unit_id) && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openModal(k)}
+                      className="p-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => askDelete(k)}
+                      className="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* Modal */}
@@ -674,20 +724,22 @@ function AdminKegiatanContent() {
                         className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-heading mb-1.5">
-                        Jenis
-                      </label>
-                      <select
-                        value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
-                      >
-                        <option value="Koordinasi">Koordinasi</option>
-                        <option value="Intel-WAS">Intel-WAS</option>
-                        <option value="Pelayanan">Pelayanan</option>
-                      </select>
-                    </div>
+                    {formData.unit_id !== 'kanwil-sulbar' && (
+                      <div>
+                        <label className="block text-sm font-semibold text-heading mb-1.5">
+                          Jenis
+                        </label>
+                        <select
+                          value={formData.type}
+                          onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-background rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-dark/30"
+                        >
+                          <option value="Koordinasi">Koordinasi</option>
+                          <option value="Intel-WAS">Intel-WAS</option>
+                          <option value="Pelayanan">Pelayanan</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -719,15 +771,22 @@ function AdminKegiatanContent() {
                   {/* Upload gambar (resize + konversi WebP di server) */}
                   <div>
                     <label className="block text-sm font-semibold text-heading mb-1.5">
-                      Galeri Gambar <span className="font-normal text-text/40">(maks 10, auto WebP)</span>
+                      Galeri Gambar <span className="font-normal text-text/40">(maks {MAX_GALLERY_IMAGES}, auto WebP)</span>
                     </label>
 
-                    <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl p-5 cursor-pointer hover:border-accent/60 hover:bg-accent/5 transition-colors">
+                    <label
+                      className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 transition-colors ${
+                        formData.gallery.length >= MAX_GALLERY_IMAGES
+                          ? 'border-border/50 bg-muted/30 cursor-not-allowed opacity-70'
+                          : 'border-border cursor-pointer hover:border-accent/60 hover:bg-accent/5'
+                      }`}
+                    >
                       <input
                         ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         multiple
+                        disabled={formData.gallery.length >= MAX_GALLERY_IMAGES || uploading}
                         onChange={(e) => handleUploadFiles(e.target.files)}
                         className="hidden"
                       />
@@ -738,11 +797,21 @@ function AdminKegiatanContent() {
                             Memproses & mengupload gambar...
                           </span>
                         </>
+                      ) : formData.gallery.length >= MAX_GALLERY_IMAGES ? (
+                        <>
+                          <ImagePlus className="w-6 h-6 text-text/30" />
+                          <span className="text-xs font-bold text-heading">
+                            Batas maksimal {MAX_GALLERY_IMAGES} gambar tercapai ({formData.gallery.length}/{MAX_GALLERY_IMAGES})
+                          </span>
+                          <span className="text-[11px] text-text/40">
+                            Hapus salah satu gambar di bawah jika ingin mengganti
+                          </span>
+                        </>
                       ) : (
                         <>
                           <ImagePlus className="w-6 h-6 text-text/40" />
                           <span className="text-xs font-bold text-heading">
-                            Pilih & upload 1–10 gambar
+                            Pilih & upload 1–{MAX_GALLERY_IMAGES} gambar ({formData.gallery.length}/{MAX_GALLERY_IMAGES})
                           </span>
                           <span className="text-[11px] text-text/40">
                             Otomatis di-resize (lebar 1600px) & dikonversi ke WebP

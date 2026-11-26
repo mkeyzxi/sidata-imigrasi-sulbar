@@ -1,6 +1,8 @@
 import {NextResponse} from 'next/server'
 import {getKegiatanList} from '@/lib/supabase/data-service'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/kegiatan — Ambil daftar kegiatan publik yang terbit
 export async function GET(req: Request) {
   const {searchParams} = new URL(req.url)
